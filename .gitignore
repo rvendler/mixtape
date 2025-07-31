@@ -14,6 +14,7 @@ logs/
 
 saves/
 test/
+masters/
 
 # Database file
 database/app.db 
