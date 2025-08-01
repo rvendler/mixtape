@@ -42,8 +42,10 @@ For each song, provide the following information:
 - Band name (e.g. "The Funky Monkeys")
 - Song name (e.g. "The Cage After Dark")
 - Lyrics description ("Silly lyrics about animals having fun at the zoo after closing hours.")
-- Music style (e.g. "90s alternative rock, loud quiet loud style")
+- Music genre (e.g. "90s alternative rock, loud quiet loud style" - must always start with 90s, as that is the appropriate era, and you should use genres that existed at this time)
 - Vocals style (e.g. "female")
+
+Make sure you vary the style of band name and song name, so they are not all just two words.
 
 Output in the following JSON format:
 
@@ -57,8 +59,8 @@ Output in the following JSON format:
 			"band_name": "<band name>",
 			"song_name": "<song name>",
 			"lyrics_description": "<lyrics description>",
-			"music_style": "<music style, do NOT mention any band names here, that will cause rejection>",
-			"vocals_style": "<male or female>"
+			"music_genre": "<90s music genre, do NOT mention any band names here, that will cause rejection, start with the general genre, and then more specifics after that>",
+			"vocals_style": "<male or female, no other options>"
 		}},
 		...
 	]
@@ -66,13 +68,30 @@ Output in the following JSON format:
 
 Respond ONLY with the JSON."""
 
-lyrics_prompt = """Write lyrics for a ficitious song to go on a mixtape with the theme: "{theme}"
+lyrics_prethink_prompt = """Your task is to think about lyrics for a ficitious song to go on a mixtape with the theme: "{theme}"
 
 The song is called: {song_name}
-The music style is: {music_style}
+The music genre is: {music_genre}
 The vocals style is: {vocals_style}
 
 Guidance for the lyrics: {lyrics_description}
+
+Remember, your goal is not state the theme or guidance directly in the lyrics, but let it inspire you.
+
+You should NOT yet write the lyrics, instead consider the following:
+
+1. What is the overall theme?
+2. What is the viewpoint of the song?
+3. What are some specifics you want to lean into in the lyrics? How do you avoid it being too on the nose? Make sure you show, don't tell.
+4. What should the tone and attitude be?
+5. What sets it apart from other songs and makes it interesting or unique?
+6. Consider what kind of lyrics and writing style is usually applied in this musical genre
+7. What kind of language should you use? Direct, romantic, with or without metaphors, etc. Is it complex or simplistic?
+
+Write down your thoughts these points. They don't have to come together to one coherent whole yet.
+"""
+
+lyrics_prompt = """Now write lyrics for the song based on the spec and your considerations above.
 
 Prefix each section in the lyrics with one of [intro], [verse], [pre-chorus], [chorus], [bridge], [solo], [outro].
 
@@ -81,6 +100,8 @@ Your song should have the following structure:
 
 Do NOT give any other guidance in addition to the lyrics. Only the tags above and the lyrics to be sung.
 The lyrics MUST be real lyrics, not indications of sound effect or other things, only sung lyrics, not using any parentheses.
+
+Remember that the setting is the 1990s, so don't make reference to mobile phones, laptops, social media, or other more modern things that didn't exist in that time period.
 
 Output only the lyrics, nothing else."""
 

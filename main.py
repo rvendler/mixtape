@@ -66,6 +66,13 @@ def build_song_structure() -> List[Dict[str, Any]]:
     has_solo = random.choice([True, False, False, False, False, False])
     has_outro = random.choice([True, False, False])
 
+    if num_verses == 3:
+        has_solo = False
+        has_intro = False
+        has_outro = False
+        SECTION_DEFS['verse'] = 4
+        SECTION_DEFS['pre-chorus'] = 2
+
     # --- 3. Build the Song Structure Chronologically ---
 
     # Add Intro
@@ -128,11 +135,11 @@ def build_song_structure() -> List[Dict[str, Any]]:
             'section': 'verse', 'lines': verse_lines,
             'line_length': section_line_lengths['verse']
         })
-        if has_pre_chorus:
-            song_structure.append({
-                'section': 'pre-chorus', 'lines': pre_chorus_lines,
-                'line_length': section_line_lengths['pre-chorus']
-            })
+#        if has_pre_chorus:
+#            song_structure.append({
+#                'section': 'pre-chorus', 'lines': pre_chorus_lines,
+#                'line_length': section_line_lengths['pre-chorus']
+#            })
         song_structure.append({
             'section': 'chorus', 'lines': chorus_lines,
             'line_length': section_line_lengths['chorus']
@@ -195,15 +202,47 @@ def step_create_lyrics(project, llm):
             for section in song["structure"]:
                 structure += f"""[{section["section"]}]\n"""
                 structure += f"""- {section["lines"]} lines of {section["line_length"]} length.\n"""
-            lyrics = llm.query(prompts.lyrics_prompt.format(
+
+            messages = []
+
+            messages.append({"role": "user", "content": prompts.lyrics_prethink_prompt.format(
                 theme = project.state["mixtape_type"],
                 song_name = song["song_name"],
-                music_style = song["music_style"],
+                music_genre = song["music_genre"],
                 vocals_style = song["vocals_style"],
                 lyrics_description = song["lyrics_description"],
                 structure = structure
-                ))
-            print(lyrics)
+                )})
+
+            lyrics_prethink = llm.query_messages(messages, max_tokens = 8192, temperature = 1.0, model = config.DEFAULT_MODEL)
+
+            messages.append({"role":"assistant", "content": lyrics_prethink})
+
+            messages.append({"role": "user", "content": prompts.lyrics_prompt.format(
+                theme = project.state["mixtape_type"],
+                song_name = song["song_name"],
+                music_genre = song["music_genre"],
+                vocals_style = song["vocals_style"],
+                lyrics_description = song["lyrics_description"],
+                structure = structure
+                )})
+
+            lyrics = llm.query_messages(messages, max_tokens = 8192, temperature = 1.0, model = config.DEFAULT_MODEL)
+
+            messages.append({"role":"assistant", "content": lyrics})
+
+#            jprint(messages)
+
+#            lyrics = llm.query(prompts.lyrics_prompt.format(
+#                theme = project.state["mixtape_type"],
+#                song_name = song["song_name"],
+#                music_genre = song["music_genre"],
+#                vocals_style = song["vocals_style"],
+#                lyrics_description = song["lyrics_description"],
+#                structure = structure
+#                ))
+#            print(lyrics)
+
             song["lyrics"] = lyrics
             project.save()
 
@@ -225,8 +264,8 @@ def submit_suno_job(title, style, lyrics=""):
 
     try:
         print(f"Submitting job for '{title}'...")
-        jprint(headers)
-        jprint(payload)
+#        jprint(headers)
+#        jprint(payload)
         response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=30)
         response.raise_for_status()
         result = response.json()
@@ -252,7 +291,7 @@ def poll_suno_job_status(task_id):
         response.raise_for_status()
         data = response.json()
 
-        jprint(data)        
+#        jprint(data)        
 
         message = "succeeded"
 
@@ -326,7 +365,7 @@ def step_create_audio_simple_poll(project, max_in_flight=2, poll_interval=30):
         while len(in_flight_jobs) < max_in_flight and songs_to_create:
             song = songs_to_create.popleft()
             title = song["song_name"]
-            style = f"{song['music_style']}, {song['vocals_style']} vocals"
+            style = f"{song['music_genre']}, {song['vocals_style']} vocals"
             lyrics = song["lyrics"]
 
             task_id = submit_suno_job(title, style, lyrics)
@@ -343,6 +382,7 @@ def step_create_audio_simple_poll(project, max_in_flight=2, poll_interval=30):
 
         if not in_flight_jobs:
             if not songs_to_create: break
+            time.sleep(poll_interval)
             continue
 
         # 2. Poll all in-flight jobs
@@ -390,15 +430,225 @@ def step_create_audio_simple_poll(project, max_in_flight=2, poll_interval=30):
 
     print(f"\nAll songs for project '{project.name}' have been processed.")
 
+def rune_make_suno_request(title, style, lyrics=""):
+  url = "https://studio-api.prod.suno.com/api/generate/v2-web/"
+
+  headers = {
+    'Accept': '*/*',
+    'Accept-Language': 'en-US,en;q=0.9,da;q=0.8',
+    'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18yT1o2eU1EZzhscWRKRWloMXJvemY4T3ptZG4iLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJzdW5vLWFwaSIsImF6cCI6Imh0dHBzOi8vc3Vuby5jb20iLCJleHAiOjE3NTQwMDMwNjIsImZ2YSI6Wzk5OTk5LC0xXSwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9jbGVya19pZCI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIiwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9lbWFpbCI6InJ2ZW5kbGVyQGdtYWlsLmNvbSIsImh0dHBzOi8vc3Vuby5haS9jbGFpbXMvcGhvbmUiOm51bGwsImlhdCI6MTc1Mzk5OTQ2MiwiaXNzIjoiaHR0cHM6Ly9jbGVyay5zdW5vLmNvbSIsImp0aSI6IjA0MDIxOWNmNzcyNTBiMDQ0YzMzIiwibmJmIjoxNzUzOTk5NDUyLCJzaWQiOiJzZXNzXzJ1WE5tc0ZNOHZ1dXUzM0NrRm9uSVpGVm5sTiIsInN1YiI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIn0.N1EBASP8YRVxmGxnp1opU_C58nQJNFozg0ELsl7torGI-4Os-iclnu0MFZDafkiFUanyXcYIGXLqSLaEb4kCqC9qa5pskpcwEcDJRwEBC8cywKfgFj34ERQDvGaeV5oisITYx7_h4LW-pPSHLMC3iIpQqWyJI-3tdhZEqDPU9yIgAQqya2jrIWMg1iv--YYLhkRQbqI178smz79qMKUupcwy9qFVmfCB3X5tCOGi6X4ybRJ1YGn_saKRXlDfl7d07MFkYdECS3ixfQNh1ewlqSevGsfhh0s5RTMZh280XHvpTPmKfjQhv5tzqmChoTwucxGqB1zSWDwtDPODU_Wt0Q',
+    'Content-Type': 'text/plain;charset=UTF-8',
+    'Origin': 'https://suno.com',
+    'Referer': 'https://suno.com/',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36'
+  }
+
+  # The full payload from your request, including the long token
+  payload = {
+    "token": "P1_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.haJwZACjZXhwzmiL6OCncGFzc2tlecUEmvEXM6qHdF-HkL7eKQJ575FODgu2RSAze1hJQuXEFnR6986-c2MHpXqZGAAXRSOSd3jOJ7lfeJMABftgZx_Ibc-xVaXkkSUInFgqESFmyd5rWK6CFlxUuqcrzEMQTntzhbykZ5nzHKwUREDzrI6gWjUCF5fKBwWc5y2TwtyIVHc-7JWLOUvWSOaioahD3T2g3nxqS8rbMlFTxWTWVVL1JcH-B1OnH4tVkaawLIm6UDMTYwrWGMUon79Dq1UF05RKOLi6QS2lJwFlNgfzt4QfNPPJSI1nEQ0MVekbaWDro1EuvyiIVkD1dQJ7zhM4U7JIOYG5e2oqIqtMEGiPX2FWZs2Hw7oj8UiNIJlQxfbDbyO4KyB7z1rI9yKXKr3ZQVGbwXlo6C-AoQYCdrAFDqY85Tv-erSAG4rt1eNhIz58Wf1AQWNUcEt1AvLv_pCh2d8AMjjHB5NRrQ3Sm_T9Lea-CUQObEHxL-MDdtSw8f6XIIYxFaJf-Yoax3seh8NTwv7kzrmVHTdOpxk5cj2ttiA3dYH7w_egBHadCfYh0qyE9oWJz5wODfOdepcIhYMKFvV-ro4lJwPFIiy290yoR9Xfc-3v0q61Ul121_gohtDWN_l69Acc67ESosVR5FsWGivxUlXahPAyuC-rfuvMrXoXBg3GEqDhpxZq6-0zse0Bjk6mmLfG9Ul8ACeTZBYjNM1Zl_HTT9-Ljr9gqwiozEJWSmWc4VtZfi7Pde7JjdoSqTRwgPHzVAmj707lujAF5-0zThGMV_ZodifeDjcfcsLj8AxX0d7BD0jFTuYbDrzERSoRwwbbiP1Xzoy0oSjn4pr7L6RZ7iVltEKFS9oduD_adFFcLAVVKEHHZljfIdcigaqd6aL11h62rLi_PDx5Eq2MNtO2O3kaECoHvI6uNWbjtTK-5Mpr2GZjSHL_KniL-UrT3V24FP1Z6o1Rn1xkx9YjYdJl2FtzvEUd3aAdpIWsmGZcnzqTW4Ejd1VCB5fE9kwt7lbc1jFpBIkBXIPZQjUprwVwhRyAh5x8L27dNjXk_J_PuU2NmJLoCHSUUEaVqbMfnvM7hu7dEybUTXvigpzaiO4RP8aWwvAFgYBehYIiD2w9Fx30wZlNWILvZ5ZlDV7MrETpQ7iFAeQJo3fja_F86QSLv3nCl6bGM7gJSwig4pqcXFJcoxmzaLEUdWR00B42a6JQreFB61hDIxAjTBUrA40Xf2GFP_DieWlO3E7-q5XDnFmkBmzDNt778vXvPXfXNaQBR8HHAFQK2MjkDcByVPbq0uuqWs5fxxi43Naq20dy3MDU4uO7DORylpMTYoXaFMg09VqQJU7yPHXH54KdOLusyEQDk3AUqmThFtEcChE3Cx2wlfhfFyt3xVjMvsikv7OB2L0Kgl3xlk19Ihf9mp4aQhV5_1h70CpvgZaTCPK1Y0pPgvcPCjbWKT9N70GZPJzrctyNmdhFpcqYAhmWBL5G6b4z85gluqWr_OUt-uf2-oXdQ6GRy9tHK8pHo3ioe9NaPEsBG9y-XQ8rTSbcm7BsLCrlbMRAKP9V5xbUzL8Q3LsTyM634lPOomtyqDI1MWZmMmE1qHNoYXJkX2lkzhQ8hB8.WUWaP_zn8RnvskhaV3EAFvojVINBbZVakXXMIAwhVW8",
+    "prompt": lyrics,
+    "generation_type": "TEXT",
+    "tags": style,
+    "negative_tags": "",
+    "mv": "chirp-bluejay",
+    "title": title,
+    "continue_clip_id": None,
+    "continue_at": 0,
+    "continued_aligned_prompt": None,
+    "infill_start_s": None,
+    "infill_end_s": None,
+    "task": None,
+    "override_fields": ["prompt", "tags"],
+    "persona_id": None,
+    "playlist_clip_ids": [],
+    "underpainting_start_s": None,
+    "underpainting_end_s": None,
+    "overpainting_start_s": None,
+    "overpainting_end_s": None,
+    "artist_clip_id": None,
+    "artist_start_s": None,
+    "artist_end_s": None,
+    "cover_clip_id": None,
+    "metadata": {
+      "create_mode": "custom",
+      "user_tier": "3eaebef3-ef46-446a-931c-3d50cd1514f1",
+      "lyrics_model": "remi-v1",
+      "create_session_token": "336ee657-8fa6-46b5-96d9-bc66acfd05e9",
+      "can_control_sliders": ["weirdness_constraint", "style_weight"]
+    }
+  }
+
+  try:
+    print("STEP 1: Sending generation request to Suno API...")
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response.raise_for_status()
+    print(f"Request successful with Status Code: {response.status_code}")
+    jprint(response.json())
+    return response.json()
+  except requests.exceptions.HTTPError as http_err:
+    print(f"HTTP error occurred: {http_err}")
+    print(f"Status Code: {http_err.response.status_code}")
+    print("Response Body:", http_err.response.text)
+    print("\nACTION REQUIRED: Your 'Authorization' token is likely expired. Please follow the instructions in the script to update it.")
+    return None
+  except Exception as err:
+    print(f"❌ An other error occurred: {err}")
+    return None
+
+def rune_download_clips(clips_data, folder):
+  print("\nSTEP 2: Starting download process for generated clips...")
+  clips_to_download = list(clips_data)
+ 
+  while clips_to_download:
+    wait_time = 30
+    print(f"\n---\nWaiting {wait_time} seconds before trying {len(clips_to_download)} remaining clip(s)...\n---")
+    time.sleep(wait_time)
+
+    # Create a copy to iterate over, allowing us to safely remove items from the original list
+    for clip in list(clips_to_download):
+      clip_id = clip.get('id')
+      clip_title = clip.get('title', 'untitled')
+      download_url = f"https://cdn1.suno.ai/{clip_id}.mp3"
+     
+      print(f"\nAttempting to download: '{clip_title}' (ID: {clip_id})")
+     
+      try:
+        response = requests.get(download_url, stream=True)
+        if response.status_code == 200:
+          # Sanitize the title to create a valid filename
+          # Removes illegal characters and strips trailing spaces/underscores
+          safe_title = re.sub(r'[\\/*?:"<>|]', "", clip_title).strip()
+          filename = f"saves/{folder}/{clip_id}.mp3"
+         
+          with open(filename, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+              f.write(chunk)
+         
+          print(f"Successfully downloaded and saved as '{filename}'")
+          clips_to_download.remove(clip) # Remove from list after success
+        elif response.status_code == 404:
+          print(f"Clip not ready yet (Status: 404 Not Found). Will retry.")
+        else:
+          print(f" Download failed with status {response.status_code}. Will retry.")
+      except requests.exceptions.RequestException as e:
+        print(f"An error occurred during download attempt: {e}. Will retry.")
+
+def rune_step_create_audio(project):
+  for song in project.state["mixtape"]["songs"]:
+    if not "song_ids" in song:
+      clips_data = rune_make_suno_request(song["song_name"], song["music_style"] + ", " + song["vocals_style"] + " vocals", song["lyrics"])
+
+      if clips_data and 'clips' in clips_data:
+        clips = clips_data.get('clips', [])
+        if not clips:
+          print("Request was successful, but no clips were returned in the response.")
+        else:
+          rune_download_clips(clips, project.name)
+          song["song_ids"] = []
+          for clip in clips:
+            song["song_ids"].append(clip.get('id'))
+          project.save()
+
+def rune_attempt_download_clip(clip_id, title, folder):
+  """Attempts to download a single clip and returns True on success."""
+  download_url = f"https://cdn1.suno.ai/{clip_id}.mp3"
+  try:
+    response = requests.get(download_url, stream=True, timeout=30)
+    if response.status_code == 200:
+      filename = f"saves/{folder}/{clip_id}.mp3"
+      os.makedirs(os.path.dirname(filename), exist_ok=True)
+      with open(filename, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=8192):
+          f.write(chunk)
+      print(f"✅ Downloaded '{title}'")
+      return True
+    return False
+  except requests.exceptions.RequestException:
+    return False
+
+def rune_step_create_audio_simple_poll(project, max_in_flight=5, poll_interval=60):
+  songs_to_create = deque([
+    s for s in project.state["mixtape"]["songs"] if not s.get("song_ids")
+  ])
+  # Tracks songs submitted to the API but not yet fully downloaded.
+  # Format: { 'song_name': {'clip_ids': {'id1', 'id2'}, 'song_ref': song} }
+  in_flight_jobs = {}
+
+  if not songs_to_create:
+    return
+
+  print(f"Starting simple polling process for '{project.name}'.")
+  print(f" Max in-flight jobs: {max_in_flight} | Poll Interval: {poll_interval}s")
+
+  while songs_to_create or in_flight_jobs:
+   
+    # 1. Queue new requests until the flight limit is reached
+    while len(in_flight_jobs) < max_in_flight and songs_to_create:
+      song = songs_to_create.popleft()
+      title = song["song_name"]
+     
+      print(f"\n Submitting request for: '{title}'")
+      response_data = rune_make_suno_request(title, f"{song['music_style']}, {song['vocals_style']} vocals", song["lyrics"])
+
+      if response_data and response_data.get('clips'):
+        print(f" Request for '{title}' is in flight.")
+        clips = response_data.get('clips', [])
+        in_flight_jobs[title] = {
+          'pending_clips': {c['id'] for c in clips},
+          'all_clip_ids': {c['id'] for c in clips}, # Keep original set for saving
+          'song_ref': song
+        }
+      else:
+        print(f"Failed to submit '{title}'. Placing at the end of the queue.")
+        songs_to_create.append(song)
+        time.sleep(3) # Small delay after a failure
+
+    # 2. Poll all clips for all in-flight jobs
+    if not in_flight_jobs:
+      if not songs_to_create: break # All done
+      print("No jobs in flight. Looping to check queue.")
+      continue
+     
+    print(f"\nPolling {len(in_flight_jobs)} in-flight job(s)...")
+    downloaded_this_cycle = []
+    for job_name, job_data in in_flight_jobs.items():
+      # Use a copy for safe iteration while removing items
+      for clip_id in list(job_data['pending_clips']):
+        if rune_attempt_download_clip(clip_id, job_name, project.name):
+          downloaded_this_cycle.append((job_name, clip_id))
+          job_data['pending_clips'].remove(clip_id)
+   
+    # 3. Finalize any jobs where all clips have been downloaded
+    completed_jobs = []
+    for job_name, job_data in in_flight_jobs.items():
+      if not job_data['pending_clips']: # Set is empty, job is done
+        print(f"Job Complete: '{job_name}'")
+        song_to_update = job_data['song_ref']
+        song_to_update['song_ids'] = list(job_data['all_clip_ids'])
+        project.save()
+        print(f" Progress for '{job_name}' saved.")
+        completed_jobs.append(job_name)
+
+    # Clean up the in_flight list
+    for job_name in completed_jobs:
+      del in_flight_jobs[job_name]
+
+    # 4. Sleep before the next cycle
+    if songs_to_create or in_flight_jobs:
+      print(f"\n...Cycle complete. Waiting {poll_interval} seconds...")
+      time.sleep(poll_interval)
+     
+  print(f"\nAll songs for project '{project.name}' have been processed.")
 
 def step_apply_tape_vst(project):
     for song in project.state["mixtape"]["songs"]:
         if not "vst_processed" in song:
-            for song_id in song["song_ids"]:
-                vst_preset = random.choice(data.song_presets_light)
-                mt_song = MT.from_file(f"saves/{project.name}/{song_id}.mp3")
-                mt_song.apply_vst("Cassette", vst_preset)
-                mt_song.save(f"saves/{project.name}/{song_id}-tape.mp3", "mp3")
+            song_id = song["song_ids"][0]
+#            for song_id in song["song_ids"]:
+            vst_preset = random.choice(data.song_presets_light)
+            mt_song = MT.from_file(f"saves/{project.name}/{song_id}.mp3")
+            mt_song.apply_vst("Cassette", vst_preset)
+            mt_song.save(f"saves/{project.name}/{song_id}-tape.mp3", "mp3")
             song["vst_processed"] = True
             project.save()
 
@@ -526,7 +776,8 @@ def main():
     step_create_mixtape(project, llm)
     step_create_song_structures(project)
     step_create_lyrics(project, llm)
-    step_create_audio_simple_poll(project)
+#    step_create_audio_simple_poll(project)
+    rune_step_create_audio_simple_poll(project)
     step_apply_tape_vst(project)
     step_create_cover_image(project, replicate_client)
     step_process_cover_image(project)
@@ -543,7 +794,7 @@ if __name__ == "__main__":
         print(f"Failed to initialize ArgManager: {e}")
         sys.exit(1) # Exit if initialization fails
     
-    print(submit_suno_job("Test for marsZ", "Happy pop punk", lyrics="[verse]\nThis is a test\n\n[chorus]Test, test, test"))
+#    print(submit_suno_job("Test for marsZ", "Happy pop punk", lyrics="[verse]\nThis is a test\n\n[chorus]Test, test, test"))
 
     if ArgManager.get_arg("project") == None:
         print("project not specified")
