@@ -87,14 +87,14 @@ class LLM:
         if model is None:
             model = self.default_model
 
-        logger.info("\n\n\n-----------------------------------------------------------------------------------")
-        logger.info(f"Querying model: {model}\n")
+#        logger.info("\n\n\n-----------------------------------------------------------------------------------")
+#        logger.info(f"Querying model: {model}\n")
         
         # Log the system message
-        if system_message:
-            logger.info(f"System message: {system_message}\n")
-        else:
-            logger.info("System message: (empty)\n")
+ #       if system_message:
+ #           logger.info(f"System message: {system_message}\n")
+ #       else:
+ #           logger.info("System message: (empty)\n")
 
         # Log the latest message
         if messages:
@@ -113,8 +113,8 @@ class LLM:
             else:
                 content_preview = str(content)
             
-            logger.info(f"Latest message ({role}): {content_preview}")        
-        logger.info("-----------------------------------------------------------------------------------\n\n\n")
+  #          logger.info(f"Latest message ({role}): {content_preview}")        
+  #      logger.info("-----------------------------------------------------------------------------------\n\n\n")
 
         parts = model.split('-', 1)
         if len(parts) != 2:

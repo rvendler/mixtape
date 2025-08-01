@@ -29,6 +29,117 @@ mixtape_types = [
 	"The Color Orange: A mix of songs that just feel bright, energetic, and a little weird. 'Semi-Charmed Life,' 'Steal My Sunshine,' and 'Flagpole Sitta.'",
 	"Static on the TV After Midnight: Eerie, quiet, and slightly unsettling tracks for 3 AM insomnia. Portishead, Tricky, and the B-sides from Radiohead's OK Computer.",
 	"Sun-Bleached & Salty: The feeling of a long beach day fading into a cool evening bonfire. Sublime, Sugar Ray, 311, and Everclear.",
+    "The 'I'm Too Cool for This' Mix: Deliberately obscure bands and B-sides to show off your superior music taste at parties.",
+    "Driving Home from Work at 5 PM: Traffic jam anthems and commuter blues. Songs about being stuck, going nowhere, and dreaming of escape.",
+    "The Bedroom Producer: Lo-fi bedroom recordings, four-track experiments, and intentionally unpolished gems that sound like secrets.",
+    "Neon Lights & Late Nights: Club kids and rave culture. Glow sticks optional, basslines mandatory.",
+    "The 'My Older Sibling Made This' Tape: Cool music you discovered by raiding someone else's collection. Slightly too mature for your age.",
+    "Suburban Rebellion: For kids who think mowing the lawn is oppression. Mild punk for the subdivisions.",
+    "The Stoner's Philosophy Hour: Slow, heavy, and contemplative. Perfect for deep thoughts about nothing important.",
+    "VHS Horror Movie Vibes: Industrial, dark ambient, and creepy synthwave. Soundtrack to your nightmares.",
+    "The 'I Just Got My License' Mix: Freedom songs for your first solo drive. Windows down, volume up, parents worried.",
+    "Fluorescent Grocery Store at 2 AM: Weird, lonely, late-night shopping music. Ambient and slightly unsettling.",
+    "The Cheerleader's Secret Shame: Bubblegum pop on the outside, angry riot grrrl on the inside.",
+    "Fake ID Energy: Songs that make you feel older and cooler than you actually are.",
+    "The Art Kid's Soundtrack: Pretentious, experimental, and probably recorded in someone's garage.",
+    "Pizza Party Chaos: High-energy, goofy songs for sleepovers and birthday parties gone wild.",
+    "The 'I'm Moving to New York' Fantasy: Songs about big city dreams and small town escape plans.",
+    "Waiting for the Phone to Ring: Anxious love songs for hoping your crush will call you back.",
+    "The Grungy Coffee Shop: Acoustic guitars, flannel shirts, and existential lyrics scribbled in margins.",
+    "Skipping Class to Sit in Your Car: Parking lot philosophy and first-period rebellion.",
+    "The 'My Parents Are Fighting Again' Tape: Loud music to drown out the chaos downstairs.",
+    "Basement Show Energy: DIY punk recorded on a boombox in someone's finished basement.",
+    "The Exchange Student's Discovery: American music that sounds exotic to foreign ears.",
+    "Roller Rink Romance: Cheesy love songs and disco beats for couples skate night.",
+    "The Night Shift Worker's Dawn: Driving home as the sun rises, exhausted but somehow peaceful.",
+    "Fake Sick Day Adventures: Songs for playing hooky and wandering around town alone.",
+    "The 'I Think I'm in Love' Realization: That moment when friendship turns into something more.",
+    "Garage Band Dreams: Songs that make you want to start a band with your friends immediately.",
+    "The Babysitter's After-Hours: What you listen to once the kids are asleep and the house is yours.",
+    "Comic Book Store Vibes: Nerd culture anthems and songs about feeling like an outsider hero.",
+    "The 'Summer Job Sucks' Playlist: Music to make minimum wage more bearable.",
+    "Waiting Room Anxiety: Nervous energy and fidgety songs for doctor's appointments and job interviews.",
+    "The 'I'm Too Old for This' Mix: When you're 19 and feel ancient watching younger kids have fun.",
+    "Blacklight Poster Atmosphere: Trippy, psychedelic songs for rooms lit only by lava lamps.",
+    "The Debate Team's Victory Lap: Smart-kid music for academic overachievers who think they're punk.",
+    "Parking Lot Makeout Session: Steamy slow jams for cramped car romance.",
+    "The 'I Just Read Catcher in the Rye' Phase: Angsty songs about phonies and authenticity.",
+    "Laundromat Meditation: Hypnotic, repetitive songs for watching clothes spin in circles.",
+    "The Rich Kid's Rebellion: Expensive angst and trust fund punk rock.",
+    "Thrift Store Treasure Hunt: Vintage vibes and songs about finding hidden gems in dusty bins.",
+    "The 'My Friend's Older Brother is So Cool' Mix: Music that seems impossibly sophisticated.",
+    "Dentist Office Nightmare: Songs that somehow make dental work even more uncomfortable.",
+    "The 'I'm Definitely Going to Be Famous' Tape: Confidence-boosting anthems for future rock stars.",
+    "Bus Stop Blues: Songs for waiting in the rain with no umbrella and questionable life choices.",
+    "The Honors Student's Dark Side: Perfect grades, imperfect thoughts, and music parents wouldn't approve of.",
+    "Stolen Cable TV Soundtrack: Songs that feel slightly illegal and definitely exciting.",
+    "The 'Everyone Else is Fake' Mix: Superiority complex anthems for teenagers who think they're the only real ones.",
+    "Hot Topic Employee Handbook: Mall goth essentials and eyeliner application music.",
+    "The 'I Want to Disappear' Collection: Songs for feeling invisible and kind of liking it.",
+    "Detention Hall Daydreams: Music for staring out windows and planning your escape from authority.",
+    "The 'My Diary is Full' Emergency: Emotional overflow songs when writing isn't enough.",
+    "Fake Vintage Cool: Songs that make you feel like you were born in the wrong decade.",
+    "The Theater Kid's Emotional Range: Dramatic songs that require jazz hands and tears.",
+    "Late-Night VHS Rewind: A hazy, dreamlike mix of ambient, lo-fi rock, and analog synths. For falling asleep to the TV glow and tape hiss.",
+    "Mixtape from the Cool Older Cousin: Stuff that feels just a little too mature for your age. College radio gems, proto-indie rock, and shoegaze with mysterious band names.",
+    "Mom's Car Stereo: A weirdly comforting blend of adult contemporary, soft rock, and 90s country-pop. Heavy on reverb and sentimentality.",
+    "Basement Show Energy: Raw recordings, DIY vibes, and punk energy with half-broken instruments and passion louder than talent.",
+    "When AIM Goes Silent: For the moment your crush logs off. Soft synth pop, indie ballads, and a hint of teen despair.",
+    "Cafeteria Daydreams: Instrumentals and gentle pop you imagined your life to while zoning out in 4th period lunch.",
+    "Backyard Bonfire Kisses: Acoustic guitars, warm harmonies, and a slow build toward that one unforgettable summer night.",
+    "Beepers & Payphones: Tracks that live between the dial tone and the voicemail beep. Gritty urban textures mixed with slow jam vibes.",
+    "Tragic Prom Night: Starts upbeat with glittering dance-pop, ends in mascara-streaked ballads and longing from the bathroom stall.",
+    "After-School Special: The emotional arc of a teen drama. One mix to cry, reflect, rebel, and reconcile to.",
+    "Corduroy & Patchouli: Earthy, jammy tracks from the tie-dye fringe of the alternative scene. Long solos, weird percussion, and deep thoughts.",
+    "The Mixtape You Never Gave Them: The most personal one. Every track chosen for them, labeled in secret, tucked away forever.",
+    "Locker Slams & Slurpee Breakups: Pop-rock angst and juvenile heartbreak. Cheap candy, cheaper love.",
+    "TV Static Romance: Songs that sound like distorted VHS love letters. Warbly, swoony, a little bit haunted.",
+    "Garage Band Dreams: Music that feels like your best friends trying to be famous in your neighbor’s garage after school.",
+    "CD-R Burnout: Late 90s burned CD culture. Overcompressed hits, awkward track transitions, and songs you only kind of liked.",
+    "Bus Window Weather: For long rides where you pretended to be in a music video. Rain, reflections, and headphones pressed tight.",
+    "Left on Read (in 1998): A soulful, low-key sad mix imagining what ghosting would’ve felt like on a pager.",
+    "The Green Room Tape: Sounds to listen to before you go onstage, even if 'onstage' is just your bedroom mirror.",
+    "The Mixtape That Got You Grounded: Explicit lyrics, anarchist themes, and that one track your mom overheard and freaked out about.",
+    "Cable Access at 2AM: Oddball spoken word, weird synths, outsider music, and the sound of someone testing a theremin.",
+    "Slumber Party Secrets: A sugar rush of bubblegum pop and tearjerker ballads whispered under blankets.",
+    "The Science Fair Went Bad: Weirdly futuristic, electronic, experimental. You can almost smell the solder.",
+    "Zines & Xeroxed Feelings: Lo-fi punk and spoken word tracks that sound like they came with hand-stapled lyrics and a political manifesto.",
+    "First Kiss Behind the Gym: Nervous energy, slow beats, and dreamy awkwardness wrapped in fuzzy nostalgia.",
+    "House Party at Someone’s Older Brother’s Place: Dubious beer, loud rap, nu-metal, and something someone says is 'jungle.'",
+    "Disassociation Station: When you’re physically there but mentally far, far away. Droning beats, distant vocals, and time stretched thin.",
+    "The Skatepark at Dusk: When everyone’s too tired to land another trick. Mellow beats, bruised knees, and cracked decks.",
+    "Mixtape for My Future Self: Hopeful, confused, curious—like a sonic time capsule. One part journal, one part letter.",
+    "Under the Bleachers: Secretive, rebellious, and just a little bit dangerous. The mix you sneak into your Walkman in detention.",
+    "Backyard Sprinkler Summer: Goofy, joyous, over-the-top songs that make you feel 9 again. Pop punk meets bubblegum.",
+    "Crush on a Cashier: The kind of infatuation that lasts three weeks but feels like a lifetime. Soft beats, warm vocals, dumb grins.",
+    "Leftover Halloween Candy: Spooky, sticky, strange. Indie goth-pop and eerie novelty songs you kind of love.",
+    "The Long Walk Home: When the party ends badly and you have time to think. Sparse arrangements, soft beats, and late-night thoughts.",
+    "Your Older Sibling’s Broken Heart: Second-hand sadness, heavy ballads, and weirdly wise songs that made you grow up faster.",
+    "The Night Got Weird: A chaotic, unpredictable mix for when the hangout spirals from casual to cosmic. Jump cuts from trip-hop to ska to spoken word.",
+    "I Can’t Sleep and It’s Probably My Fault: A guilt-ridden midnight tape that swings from acoustic sorrow to overly dramatic industrial beats.",
+    "Songs That Shouldn't Work Together But Do: An intentional genre crash—jazz into nu-metal, folk into breakbeats. The glue is pure chaos and heart.",
+    "The Whole Movie in One Tape: Each song is a scene—opening credits, montage, car chase, romantic fallout, triumphant ending. No actual film required.",
+    "Too Happy to Be Sad, Too Sad to Be Happy: A perfectly conflicted rollercoaster that won’t let you settle into one emotion. It's beautifully confusing.",
+    "Everything I Couldn’t Say Out Loud: A confession in the form of random songs. Some are subtle hints, others are screamingly obvious.",
+    "That Mix You Put On and Suddenly You're Cleaning Your Room: Starts lazy and slow, gets weirdly motivating in the middle, ends on a cathartic scream.",
+    "Sunday Morning Existential Dread: You’re drinking juice, staring out the window, and wondering what any of it means. The music doesn't help. In a good way.",
+    "The Soundtrack to a Friendship Ending: Not romantic heartbreak—just the weird, quiet pain of growing apart. A bittersweet blend of warm and cold tracks.",
+    "It’s Raining Inside Me: Every song feels like water running down a windowpane. Some are dramatic, others just... drip quietly.",
+    "Songs You Pretend Not to Like but Know Every Word To: Cringe-core classics, cheesy ballads, bubblegum trash. And you love every second of it.",
+    "The 'This Isn’t a Date' Date Mix: A carefully curated tape to play it cool. Casual at first, accidentally romantic by track 7.",
+    "Music for Lying on the Floor and Spinning: Whether you’re drunk, heartbroken, or just overstimulated—this mix doesn’t judge.",
+    "Songs I Think You’d Like If You Gave Them a Chance: A love letter disguised as a mixtape. Genre irrelevant—it's about showing someone how you see them.",
+    "Music for Imaginary Conversations: The soundtrack to every fake argument or apology you rehearse in the shower.",
+    "The Bathroom Mirror Monologue Mix: For practicing comebacks, pep talks, or existential breakdowns while brushing your teeth.",
+    "I Had a Dream Like This Once: A surreal, out-of-body blend of eerie, euphoric, and oddly nostalgic songs. Feels like déjà vu and static electricity.",
+    "Everything Reminds Me of Them: Even when the lyrics don't match—something in the melody or vibe hits just right. Every track is *them*.",
+    "The Mixtape You Find in a Glovebox and Don’t Know Who Made: A mysterious, haunting mix with no clear theme. Feels like someone else's memory.",
+    "Midnight at the 24-Hour Diner: Fluorescent lights, coffee refills, and tired souls. Genres melt together like syrup on Formica.",
+    "No One’s Home and the Music Is Too Loud: You’re alone and a little reckless. This mix jumps from guilty pleasures to primal screams.",
+    "Deleted Scenes from the 90s: A soundtrack for the lost footage, the quiet moments that never made it to the VHS. Loops, demos, and emotional leftovers.",
+    "My Mood Board Is Just Vibes: A highly aesthetic, zero-cohesion mixtape meant to be *felt*, not understood. Genre: Mood.",
+    "Music to Play While Driving Nowhere: Doesn’t matter where you’re going—it’s the motion, the engine hum, and the dramatic thoughts.",
+    "Tape Made by Your Future Self: A strange and comforting time capsule. Sounds half-familiar, half-impossible. Feels like advice in a dream.",
 ]
 
 mixtape_prompt = """Come up with 10 fictitious bands and songs for a 1990s cassette mixtape with the theme: "{theme}"
@@ -36,7 +147,14 @@ mixtape_prompt = """Come up with 10 fictitious bands and songs for a 1990s casse
 For the mixtape, provide the following information:
 - Mixtape backstory (e.g. "This was a romantic tape made by Neil to Laura, a girl he liked", or "This was a collecting of local underground punk bands")
 - Mixtape title (e.g. "From Neil to Laura", or "Underground Buzz")
-- Mixtape homemade cover illustration, including the title to go on the cover (e.g. "Mixtape cassette cover, pencil drawing on top of photograph of a man in a suit, drawn across him. Writing: "Lamehouse", written with old uneven typewriter, ink blotches. DIY aesthetic. 1990s feel.", or "Mixtape cassette cover, colored pencil drawing of a lighthouse, handdrawn, amateur. Writing: "To Jane", shaky lettering. DIY aesthetic. 1990s romantic feel.", or "Mixtape cassette cover, pen scribbles, all hand drawn, chaotic, dirty and unbalanced. Writing: "NEW HARDCORE" in black felt tip, bad uneven lettering. DIY aesthetic. 1990s punk feel.", or "Mixtape cassette cover, magazine collage + hand drawn details. Writing: "NIGHT OUT" in black felt tip, uneven handwriting. DIY aesthetic. 1990s feel.", or "Crudely Hand drawn cover for a homemade mixtape, from Charlie to Lily. Drawn with colored pencils. Viewed straight on.")
+- Mixtape homemade cover illustration prompt, including the title to go on the cover, examples:
+"Mixtape cassette cover, pencil drawing on top of photograph of a man in a suit, drawn across him. Writing: "Lamehouse", written with old uneven typewriter, ink blotches. DIY aesthetic. 1990s feel."
+"Mixtape cassette cover, colored pencil drawing of a lighthouse, handdrawn, amateur. Writing: "To Jane", shaky lettering. DIY aesthetic. 1990s romantic feel."
+"Mixtape cassette cover, pen scribbles, all hand drawn, chaotic, dirty and unbalanced. Writing: "NEW HARDCORE" in black felt tip, bad uneven lettering. DIY aesthetic. 1990s punk feel."
+"Mixtape cassette cover, magazine collage + hand drawn details. Writing: "NIGHT OUT" in black felt tip, uneven handwriting. DIY aesthetic. 1990s feel."
+"Crudely Hand drawn cover for a homemade mixtape, from Charlie to Lily. Drawn with colored pencils. Viewed straight on."
+You can use paper clippings, collages, photos, drawings, etc -- all kinds of handmade things
+The illustation prompt must specify that things are handmade, uneven, and so on, so we get that natural look and feel.
 
 For each song, provide the following information:
 - Band name (e.g. "The Funky Monkeys")
@@ -45,14 +163,27 @@ For each song, provide the following information:
 - Music genre (e.g. "90s alternative rock, loud quiet loud style" - must always start with 90s, as that is the appropriate era, and you should use genres that existed at this time)
 - Vocals style (e.g. "female")
 
-Make sure you vary the style of band name and song name, so they are not all just two words.
+For band names, make sure you apply a variety of different naming schemes - single word, The "something", the singer's name, two words, a question, or other variations.
+For song names, make sure they are varied and don't just restate the theme of the mixtape, but are about many different things — some cryptic, some abstract, some straightforward. Use a wide range of naming styles, such as:
+Single-word titles: "Carousel", "Velcro"
+Phrases or sentences: "I Forgot Why I Called", "We Left Before the Fireworks"
+Cryptic or symbolic names: "Red Ink in Cold Water", "4:17 AM, April"
+Questions: "Where Did You Sleep Last Year?", "Is This All We Get?"
+Character names: "Valerie in the Rain", "Dear Marcus"
+Verb-driven or action-based titles: "Burning the Maps", "Jumped the Fence at Midnight"
+Found objects or nostalgic ephemera: "Cassette 2: Side B", "Receipts and Polaroids"
+Strange or playful names: "Spaghetti in the Bathtub", "8-Bit Heart Attack"
+Contradictions or juxtapositions: "Screaming Quietly", "Permanent Goodbye"
+Places and time-based titles: "Lonely in Tallahassee", "Midnight in the Parking Lot"
+Avoid naming every song after the mixtape's title or theme. Let the songs tell their own stories, even if they’re only loosely connected by vibe.
 
 Output in the following JSON format:
 
 {{
-	"backstory": "<mixtape backstory>",
+	"backstory": "<mixtape backstory, written from the point of view of the chronicler, not the creator>",
 	"title": "<mixtape title>",
 	"illustration": "<mixtape illustration prompt for image generation>",
+	"songs_thiking": "<write your thougts about songs for the mixtape, ideas for different band names and song names that go in different directions and formats>",
 	"songs":
 	[
 		{{
@@ -80,18 +211,21 @@ Remember, your goal is not state the theme or guidance directly in the lyrics, b
 
 You should NOT yet write the lyrics, instead consider the following:
 
-1. What is the overall theme?
+1. What is the song about? Remember, the song's theme doesn't have to be the same as the mixtape's theme - it just needs to fit on a mixtape with that theme.
 2. What is the viewpoint of the song?
 3. What are some specifics you want to lean into in the lyrics? How do you avoid it being too on the nose? Make sure you show, don't tell.
-4. What should the tone and attitude be?
-5. What sets it apart from other songs and makes it interesting or unique?
-6. Consider what kind of lyrics and writing style is usually applied in this musical genre
-7. What kind of language should you use? Direct, romantic, with or without metaphors, etc. Is it complex or simplistic?
+4. Some songs are very personal and mention people and places by names. Is this such a song? If so, who and what does it mention?
+5. What should the tone and attitude be?
+6. What sets it apart from other songs and makes it interesting or unique?
+7. Consider what kind of lyrics and writing style is usually applied in this musical genre
+8. What kind of language should you use? Direct, romantic, with or without metaphors, etc. Is it complex or simplistic?
 
 Write down your thoughts these points. They don't have to come together to one coherent whole yet.
 """
 
 lyrics_prompt = """Now write lyrics for the song based on the spec and your considerations above.
+
+Remember, good lyrics evoke something in the listener. They don't preach or school the listener outright, they communicate by pulling the listener into their world and showing them, not telling them. Embrace these techniques.
 
 Prefix each section in the lyrics with one of [intro], [verse], [pre-chorus], [chorus], [bridge], [solo], [outro].
 

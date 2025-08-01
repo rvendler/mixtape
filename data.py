@@ -226,6 +226,81 @@ page_template = """<!DOCTYPE html>
             font-weight: 300;
         }}
         
+        .lyrics-section {{
+            padding: 20px;
+            background-color: #fafafa;
+            border-top: 1px solid #e9ecef;
+            min-height: 200px;
+        }}
+        
+        .lyrics-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }}
+        
+        .lyrics-title {{
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+            margin: 0;
+        }}
+        
+        .lyrics-toggle {{
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }}
+        
+        .lyrics-toggle:hover {{
+            background: #218838;
+        }}
+        
+        .lyrics-content {{
+            background-color: white;
+            border-radius: 6px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            max-height: 400px;
+            overflow-y: auto;
+            transition: opacity 0.3s ease;
+        }}
+        
+        .lyrics-content.collapsed {{
+            max-height: 0;
+            padding: 0 20px;
+            opacity: 0;
+            overflow: hidden;
+        }}
+        
+        .lyrics-text {{
+            font-size: 14px;
+            line-height: 1.6;
+            color: #444;
+            white-space: pre-line;
+            font-family: 'Montserrat', sans-serif;
+        }}
+        
+        .lyrics-placeholder {{
+            color: #888;
+            font-style: italic;
+            text-align: center;
+            padding: 40px 20px;
+        }}
+        
+        .current-song-info {{
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+            font-style: italic;
+        }}
+        
         @media (max-width: 768px) {{
             .top-section {{
                 flex-direction: column;
@@ -254,6 +329,12 @@ page_template = """<!DOCTYPE html>
             
             body {{
                 padding: 10px;
+            }}
+            
+            .lyrics-header {{
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
             }}
         }}
     </style>
@@ -287,12 +368,51 @@ page_template = """<!DOCTYPE html>
                 {quote}
             </div>
         </div>
+        
+        <div class="lyrics-section">
+            <div class="lyrics-header">
+                <h3 class="lyrics-title">Lyrics</h3>
+                <button class="lyrics-toggle" onclick="toggleLyrics()">Show/Hide</button>
+            </div>
+            
+            <div class="lyrics-content collapsed" id="lyricsContent">
+                <div class="current-song-info" id="currentSongInfo">
+                    {song_1_name}
+                </div>
+                <div class="lyrics-text" id="lyricsText">
+                    <div class="lyrics-placeholder">
+                        Lyrics will appear here when available.<br>
+                        Click on different tracks to see their lyrics.
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const tracks = document.querySelectorAll('.track');
         const audioPlayer = document.getElementById('audioPlayer');
         const currentTrackDisplay = document.querySelector('.current-track');
+        const lyricsText = document.getElementById('lyricsText');
+        const currentSongInfo = document.getElementById('currentSongInfo');
+        
+        // Lyrics database - populated from Python
+        const lyricsDatabase = {lyrics};
+
+        function updateLyrics(trackTitle) {{
+            currentSongInfo.textContent = `${{trackTitle}}`;
+            
+            if (lyricsDatabase[trackTitle]) {{
+                lyricsText.innerHTML = lyricsDatabase[trackTitle];
+            }} else {{
+                lyricsText.innerHTML = `<div class="lyrics-placeholder">Lyrics not available for this track.<br>Check back later for updates!</div>`;
+            }}
+        }}
+
+        function toggleLyrics() {{
+            const lyricsContent = document.getElementById('lyricsContent');
+            lyricsContent.classList.toggle('collapsed');
+        }}
 
         tracks.forEach(track => {{
             track.addEventListener('click', function() {{
@@ -310,6 +430,9 @@ page_template = """<!DOCTYPE html>
                 audioPlayer.src = audioSrc;
                 currentTrackDisplay.textContent = `Now Playing: ${{trackTitle}}`;
                 
+                // Update lyrics
+                updateLyrics(trackTitle);
+                
                 // Play the audio
                 audioPlayer.play();
             }});
@@ -324,6 +447,12 @@ page_template = """<!DOCTYPE html>
                 nextTrack.click();
             }}
         }});
+
+        // Initialize lyrics for the first track
+        const firstTrack = document.querySelector('.track.active .track-title');
+        if (firstTrack) {{
+            updateLyrics(firstTrack.textContent);
+        }}
     </script>
 </body>
 </html>"""

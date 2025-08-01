@@ -190,14 +190,16 @@ def step_create_mixtape(project, llm):
 def step_create_song_structures(project):
     for song in project.state["mixtape"]["songs"]:
         if not "structure" in song:
+            print(f"""Creating song structure for {song["song_name"]}""")
             structure = build_song_structure()
-            jprint(structure)
+#            jprint(structure)
             song["structure"] = structure
             project.save()
 
 def step_create_lyrics(project, llm):
     for song in project.state["mixtape"]["songs"]:
         if not "lyrics" in song:
+            print(f"""Creating lyrics for {song["song_name"]}""")
             structure = ""
             for section in song["structure"]:
                 structure += f"""[{section["section"]}]\n"""
@@ -436,7 +438,7 @@ def rune_make_suno_request(title, style, lyrics=""):
   headers = {
     'Accept': '*/*',
     'Accept-Language': 'en-US,en;q=0.9,da;q=0.8',
-    'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18yT1o2eU1EZzhscWRKRWloMXJvemY4T3ptZG4iLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJzdW5vLWFwaSIsImF6cCI6Imh0dHBzOi8vc3Vuby5jb20iLCJleHAiOjE3NTQwMDMwNjIsImZ2YSI6Wzk5OTk5LC0xXSwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9jbGVya19pZCI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIiwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9lbWFpbCI6InJ2ZW5kbGVyQGdtYWlsLmNvbSIsImh0dHBzOi8vc3Vuby5haS9jbGFpbXMvcGhvbmUiOm51bGwsImlhdCI6MTc1Mzk5OTQ2MiwiaXNzIjoiaHR0cHM6Ly9jbGVyay5zdW5vLmNvbSIsImp0aSI6IjA0MDIxOWNmNzcyNTBiMDQ0YzMzIiwibmJmIjoxNzUzOTk5NDUyLCJzaWQiOiJzZXNzXzJ1WE5tc0ZNOHZ1dXUzM0NrRm9uSVpGVm5sTiIsInN1YiI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIn0.N1EBASP8YRVxmGxnp1opU_C58nQJNFozg0ELsl7torGI-4Os-iclnu0MFZDafkiFUanyXcYIGXLqSLaEb4kCqC9qa5pskpcwEcDJRwEBC8cywKfgFj34ERQDvGaeV5oisITYx7_h4LW-pPSHLMC3iIpQqWyJI-3tdhZEqDPU9yIgAQqya2jrIWMg1iv--YYLhkRQbqI178smz79qMKUupcwy9qFVmfCB3X5tCOGi6X4ybRJ1YGn_saKRXlDfl7d07MFkYdECS3ixfQNh1ewlqSevGsfhh0s5RTMZh280XHvpTPmKfjQhv5tzqmChoTwucxGqB1zSWDwtDPODU_Wt0Q',
+    'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18yT1o2eU1EZzhscWRKRWloMXJvemY4T3ptZG4iLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJzdW5vLWFwaSIsImF6cCI6Imh0dHBzOi8vc3Vuby5jb20iLCJleHAiOjE3NTQwNTcxOTksImZ2YSI6Wzk5OTk5LC0xXSwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9jbGVya19pZCI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIiwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9lbWFpbCI6InJ2ZW5kbGVyQGdtYWlsLmNvbSIsImh0dHBzOi8vc3Vuby5haS9jbGFpbXMvcGhvbmUiOm51bGwsImlhdCI6MTc1NDA1MzU5OSwiaXNzIjoiaHR0cHM6Ly9jbGVyay5zdW5vLmNvbSIsImp0aSI6IjllYmMyYzAwMDAxNzYxYzJlNzI5IiwibmJmIjoxNzU0MDUzNTg5LCJzaWQiOiJzZXNzXzJ1WE5tc0ZNOHZ1dXUzM0NrRm9uSVpGVm5sTiIsInN1YiI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIn0.tN2iklS5rR_YC3GHUTHuuAuNoS45eFUt-wIg9I2M0zqFMSoF9elw-lRLkqIkptzSQMbAq1lKzqjYXU3qLzgdnEAyg7GtgYKAagmnxAC3wNG3kTdQpTycN3cmA2jkMsbv0aV1HGF-JYAbJhCqDMYoxPcAmQLb0ivTCvKb_kPRM0gkt6KWfxP83KqFZMeOfb7KKbETSvaHF6jZFlOnQL1x2duhgHcdyPt3Xf-_fMMCd6nsEAvUI9qJ9s6ElHW0x7gd2oxABwR5QhWINJDCd64TU0imJbJSSXTDqY51Y45wz_fNoF_tIGuKMgxLqcyCtnHQxD59Nuii1l7SOpepvhUs7A',
     'Content-Type': 'text/plain;charset=UTF-8',
     'Origin': 'https://suno.com',
     'Referer': 'https://suno.com/',
@@ -445,7 +447,7 @@ def rune_make_suno_request(title, style, lyrics=""):
 
   # The full payload from your request, including the long token
   payload = {
-    "token": "P1_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.haJwZACjZXhwzmiL6OCncGFzc2tlecUEmvEXM6qHdF-HkL7eKQJ575FODgu2RSAze1hJQuXEFnR6986-c2MHpXqZGAAXRSOSd3jOJ7lfeJMABftgZx_Ibc-xVaXkkSUInFgqESFmyd5rWK6CFlxUuqcrzEMQTntzhbykZ5nzHKwUREDzrI6gWjUCF5fKBwWc5y2TwtyIVHc-7JWLOUvWSOaioahD3T2g3nxqS8rbMlFTxWTWVVL1JcH-B1OnH4tVkaawLIm6UDMTYwrWGMUon79Dq1UF05RKOLi6QS2lJwFlNgfzt4QfNPPJSI1nEQ0MVekbaWDro1EuvyiIVkD1dQJ7zhM4U7JIOYG5e2oqIqtMEGiPX2FWZs2Hw7oj8UiNIJlQxfbDbyO4KyB7z1rI9yKXKr3ZQVGbwXlo6C-AoQYCdrAFDqY85Tv-erSAG4rt1eNhIz58Wf1AQWNUcEt1AvLv_pCh2d8AMjjHB5NRrQ3Sm_T9Lea-CUQObEHxL-MDdtSw8f6XIIYxFaJf-Yoax3seh8NTwv7kzrmVHTdOpxk5cj2ttiA3dYH7w_egBHadCfYh0qyE9oWJz5wODfOdepcIhYMKFvV-ro4lJwPFIiy290yoR9Xfc-3v0q61Ul121_gohtDWN_l69Acc67ESosVR5FsWGivxUlXahPAyuC-rfuvMrXoXBg3GEqDhpxZq6-0zse0Bjk6mmLfG9Ul8ACeTZBYjNM1Zl_HTT9-Ljr9gqwiozEJWSmWc4VtZfi7Pde7JjdoSqTRwgPHzVAmj707lujAF5-0zThGMV_ZodifeDjcfcsLj8AxX0d7BD0jFTuYbDrzERSoRwwbbiP1Xzoy0oSjn4pr7L6RZ7iVltEKFS9oduD_adFFcLAVVKEHHZljfIdcigaqd6aL11h62rLi_PDx5Eq2MNtO2O3kaECoHvI6uNWbjtTK-5Mpr2GZjSHL_KniL-UrT3V24FP1Z6o1Rn1xkx9YjYdJl2FtzvEUd3aAdpIWsmGZcnzqTW4Ejd1VCB5fE9kwt7lbc1jFpBIkBXIPZQjUprwVwhRyAh5x8L27dNjXk_J_PuU2NmJLoCHSUUEaVqbMfnvM7hu7dEybUTXvigpzaiO4RP8aWwvAFgYBehYIiD2w9Fx30wZlNWILvZ5ZlDV7MrETpQ7iFAeQJo3fja_F86QSLv3nCl6bGM7gJSwig4pqcXFJcoxmzaLEUdWR00B42a6JQreFB61hDIxAjTBUrA40Xf2GFP_DieWlO3E7-q5XDnFmkBmzDNt778vXvPXfXNaQBR8HHAFQK2MjkDcByVPbq0uuqWs5fxxi43Naq20dy3MDU4uO7DORylpMTYoXaFMg09VqQJU7yPHXH54KdOLusyEQDk3AUqmThFtEcChE3Cx2wlfhfFyt3xVjMvsikv7OB2L0Kgl3xlk19Ihf9mp4aQhV5_1h70CpvgZaTCPK1Y0pPgvcPCjbWKT9N70GZPJzrctyNmdhFpcqYAhmWBL5G6b4z85gluqWr_OUt-uf2-oXdQ6GRy9tHK8pHo3ioe9NaPEsBG9y-XQ8rTSbcm7BsLCrlbMRAKP9V5xbUzL8Q3LsTyM634lPOomtyqDI1MWZmMmE1qHNoYXJkX2lkzhQ8hB8.WUWaP_zn8RnvskhaV3EAFvojVINBbZVakXXMIAwhVW8",
+    "token": "P1_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.haJwZACjZXhwzmiMvFincGFzc2tlecUEnmFrD45zI0pzl88vPO3h-JjyofxXwWCcaropVESp0HNwpgRNmLhkLL6rG-EMhPHRRmia01Xz18fB6KUcWPocfQvguuPfhZIDIosRIa5dl7bJ1nNf13Gc1RRZPTLD5XnGYMcFVSso0Q5uwS0VFTlrHIN69IS8_ROZFOjp1AokhUbaLKVY4LVEWve1bOD6PfrRJo7bKqAu3Fj-k1yenaaKiIS3k15oXeciECD797cFfJfvZiA9tineG6mJB1svEpke-tRb35ldu3EDHxJxKosyclp9ebjghZSZUdVsuVRwxwbFLCwNNLxNmn6IuhqE0POlWA4Nb0zQTy8eHVjV6vfNpQpkzMiWTIh-WSgJfOpkSiGvkRGVZd3tHfTMqNBHs5BWnn4UPx_j86gQtdbiLWKmRiLI_ATWNkjje_fYxLlnG0zA8n8WCynogATW-WqbTxOLy5BHatVvfh7W7y5lRSdOW6TzkhjkPe7DwXO9pUueDMUJnTQnqB8_6mSFGw9Mf-_lk0eRHV62iXOOMiQcWk8enG8UtoVgUJfu_J1h5Cd8dEIl2iJT22MDSzzg7VgkoZMJLXG5R9u4iZ8XhxeZvrYf3q0ShVSu_rZZLgcLpigHpmRz4PYn-DDvKZQMGxrAF8Q9-VZctUMXR6w3IUX_Apw__ZmILXH6quX5SODthCzcBQe8JHORxnnSugIvnZHP_5aTmtQKirHO7J15UHBxnx6d6LrgMZCzTsEeg8PI0plZ2K5q_PujCq1REMcACvJif6u2R3oeTUVAk-Py5_nsvaiODbCOYUuLYETyZzXFasjTT_nSeRhS-UIq6AttIV7c-6LVXPxjzSEfP_5w5cQp7MQXTJtIbPoUAyk7dn3qM9upJXZ3nCG48LOIujy5BjlhsgyXYRkgQ4ZbW0Q5zcb9XMcfPnWdlXO453vYSJaIamxAWAfpDbaF0VInCOWA9X9u7QnbMPdcb6cZWGw9XI53z7_-STUwhg9x3-KGhS7sp9z-NCkmoP2gCv3YTnWOvottRmvfa7_bKtwPXjzukoroOVdHBMaGTc6UX8hhci5WQ3MoyVdnwejjfmBll93Oc9ad12KYMTphtAO7sfbpU3IS4cJEP1F9xdE_6PuQBP9Wfut48XFlPKFR6uD6sYPAba8WXH832zjn9RV8ISJSwLEw-1B3flcsK06LJrU38nDoGecuva_zRkpOgaWn8f1aM9U1YRLzc_s90EocZxb5eBIzPk95H5cn6XWBOiKGz6ln9WXc-Y19ZIkZlLDSaiWg3f5dRSov3khSvyRy3eigjjiU7jsjIvPOmQpTKaJILXCGhSNbaZtz17Du4hOqDb672cC9JlICicLg3Chb5HUZA8sQ1-B_khOXDRzowrCRoOr8haY1r10GfRknsSAk1VLd-NCSe8-CV_CfEeplypYj25zWAsE3QjIX4UOzsZps6ltRPm0-PnqqYA3UYqukZ1uaLGOzA_YAMJ8rLloxbOVwAUp8JjlLqlrMM-byk9MZ5nqbn8tHp7SxHtU6d1TxMq2vPKPtC4D1YLg_R5mz8fIa5XqKr3X3wVEqwFqeOiSTkAZuA6nBwKJrcqcyODAxY2JkqHNoYXJkX2lkzhQ8hB8.3unIwCU7bcDSjkJ_QJuimGwFxGOmyVV7e0VS8g4Uhio",
     "prompt": lyrics,
     "generation_type": "TEXT",
     "tags": style,
@@ -483,7 +485,7 @@ def rune_make_suno_request(title, style, lyrics=""):
     response = requests.post(url, headers=headers, data=json.dumps(payload))
     response.raise_for_status()
     print(f"Request successful with Status Code: {response.status_code}")
-    jprint(response.json())
+#    jprint(response.json())
     return response.json()
   except requests.exceptions.HTTPError as http_err:
     print(f"HTTP error occurred: {http_err}")
@@ -536,7 +538,7 @@ def rune_download_clips(clips_data, folder):
 def rune_step_create_audio(project):
   for song in project.state["mixtape"]["songs"]:
     if not "song_ids" in song:
-      clips_data = rune_make_suno_request(song["song_name"], song["music_style"] + ", " + song["vocals_style"] + " vocals", song["lyrics"])
+      clips_data = rune_make_suno_request(song["song_name"], song["music_genre"] + ", " + song["vocals_style"] + " vocals", song["lyrics"])
 
       if clips_data and 'clips' in clips_data:
         clips = clips_data.get('clips', [])
@@ -588,7 +590,7 @@ def rune_step_create_audio_simple_poll(project, max_in_flight=5, poll_interval=6
       title = song["song_name"]
      
       print(f"\n Submitting request for: '{title}'")
-      response_data = rune_make_suno_request(title, f"{song['music_style']}, {song['vocals_style']} vocals", song["lyrics"])
+      response_data = rune_make_suno_request(title, f"{song['music_genre']}, {song['vocals_style']} vocals", song["lyrics"])
 
       if response_data and response_data.get('clips'):
         print(f" Request for '{title}' is in flight.")
@@ -643,17 +645,20 @@ def rune_step_create_audio_simple_poll(project, max_in_flight=5, poll_interval=6
 def step_apply_tape_vst(project):
     for song in project.state["mixtape"]["songs"]:
         if not "vst_processed" in song:
+            print(f"""Applying tape effects for {song["song_name"]}""")
             song_id = song["song_ids"][0]
 #            for song_id in song["song_ids"]:
             vst_preset = random.choice(data.song_presets_light)
             mt_song = MT.from_file(f"saves/{project.name}/{song_id}.mp3")
-            mt_song.apply_vst("Cassette", vst_preset)
+#            mt_song.apply_vst("Cassette", vst_preset)
+            mt_song.apply_vst("DAWCassette", "presets/daw_default.fxp")
             mt_song.save(f"saves/{project.name}/{song_id}-tape.mp3", "mp3")
             song["vst_processed"] = True
             project.save()
 
 def step_create_cover_image(project, replicate_client):
     if not "cover_created" in project.state["mixtape"]:
+        print(f"""Creating cover image""")
         replicate_client.generate_image(
             output_path=f"saves/{project.name}/cover.png",
             prompt=project.state["mixtape"]["illustration"],
@@ -665,7 +670,8 @@ def step_create_cover_image(project, replicate_client):
         project.save()
 
 def step_process_cover_image(project):
-    if True or not "cover_processed" in project.state["mixtape"]:
+    if not "cover_processed" in project.state["mixtape"]:
+        print(f"""Processing cover image""")
         cover_input_filename = f"saves/{project.name}/cover.png"
         cover_output_filename = f"saves/{project.name}/cover-processed.png"
         composite_output_filename = f"saves/{project.name}/cover-composited.png"
@@ -731,16 +737,32 @@ def step_process_cover_image(project):
         project.state["mixtape"]["cover_processed"] = True
         project.save()
 
+def clean_lyrics(lyrics_text):
+    lines = lyrics_text.split('\n')
+    cleaned_lines = []
+    
+    for line in lines:
+        stripped_line = line.strip()
+        # Skip lines that start with [ or (
+        if not stripped_line.startswith('[') and not stripped_line.startswith('('):
+            cleaned_lines.append(line)
+    
+    return '\n'.join(cleaned_lines)
+
 def step_create_webpage(project):
     if True or not "webpage_created" in project.state["mixtape"]:
+        print(f"""Creating webpage""")
         playlist = ""
         song_1_name = None
         song_1_url = None
         song_index = 1
 
+        lyrics = {}
+
         for song in project.state["mixtape"]["songs"]:
             song_name = song["band_name"] + " - " + song["song_name"]
             song_url = song["song_ids"][0]+"-tape.mp3"
+            song_lyrics = song["lyrics"]
             if not song_1_name:
                 song_1_name = song_name
                 song_1_url = song_url
@@ -748,6 +770,7 @@ def step_create_webpage(project):
                         <span class="track-number">{song_index}.</span>
                         <span class="track-title">{song_name}</span>
                     </div>"""
+            lyrics[song_name] = clean_lyrics(song_lyrics)
             song_index += 1
 
         page = data.page_template.format(
@@ -756,7 +779,8 @@ def step_create_webpage(project):
             playlist = playlist,
             song_1_name = song_1_name,
             song_1_url = song_1_url,
-            quote = project.state["mixtape"]["backstory"]
+            quote = project.state["mixtape"]["backstory"],
+            lyrics = json.dumps(lyrics)
             )
         with open(f"saves/{project.name}/page.html", "w") as text_file:
             text_file.write(page)
@@ -774,8 +798,10 @@ def main():
     project = SavesManager(ArgManager.get_arg("project"), False)
 
     step_create_mixtape(project, llm)
+#    return;
     step_create_song_structures(project)
     step_create_lyrics(project, llm)
+#    return;
 #    step_create_audio_simple_poll(project)
     rune_step_create_audio_simple_poll(project)
     step_apply_tape_vst(project)
