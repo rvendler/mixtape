@@ -18,6 +18,13 @@ import data
 from mt import MT
 from replicateimage import ReplicateImage
 from collections import deque
+import html
+
+# cut edges on inlay (overlay)
+# better covers
+# avoid dust motes etc.
+# better music genres
+# lyrics guidance per section - direct, question, repeat, etc.
 
 def build_song_structure() -> List[Dict[str, Any]]:
     """
@@ -41,6 +48,7 @@ def build_song_structure() -> List[Dict[str, Any]]:
         'chorus': [4, 8],
         'bridge': [2, 4, 8],
         'solo': [0],
+        'interlude': [0],
         'outro': [2, 4]
     }
     LINE_LENGTHS = ['short', 'medium', 'long']
@@ -51,20 +59,46 @@ def build_song_structure() -> List[Dict[str, Any]]:
     # Determine consistent line counts for repeated sections
     verse_lines = random.choice(SECTION_DEFS['verse'])
     chorus_lines = random.choice(SECTION_DEFS['chorus'])
+    bridge_lines = random.choice(SECTION_DEFS['bridge']) # Determined early now
     pre_chorus_lines = random.choice(SECTION_DEFS['pre-chorus'])
 
-    # Determine a line length for each type of section
-    section_line_lengths = {
-        section: random.choice(LINE_LENGTHS) for section in SECTION_DEFS
-    }
+    # Now, apply constraints using the simpler min() logic.
+    if verse_lines == 8:
+        chorus_lines = min(chorus_lines, 4)
+        bridge_lines = min(bridge_lines, 4)
+    elif chorus_lines == 8:
+        bridge_lines = min(bridge_lines, 4)
+
+    # First, decide which section type, if any, will have long lines.
+    # We add multiple 'None' values to decrease the probability of a long section.
+    sections_for_long_choice = list(SECTION_DEFS.keys()) + [None] * 6
+    long_line_section = random.choice(sections_for_long_choice)
+
+    # Now, assign lengths to all section types.
+    section_line_lengths = {}
+    for section_type in SECTION_DEFS:
+        if section_type == long_line_section:
+            section_line_lengths[section_type] = 'long'
+        else:
+            # All other sections can only be short or medium.
+            section_line_lengths[section_type] = random.choice(['short', 'medium'])
 
     # Decide which optional sections to include and how many verses
     num_verses = random.randint(2, 3)
+    if num_verses == 3:
+        part1_verses = 2
+        part2_verses = 1
+    else:
+        part1_verses = random.choice([ 2, 1 ])
+        part2_verses = 2 - part1_verses
+
     has_intro = random.choice([True, False, False])
     has_pre_chorus = random.choice([True, False])
     has_bridge = random.choice([True, False, False, False])
     has_solo = random.choice([True, False, False, False, False, False])
     has_outro = random.choice([True, False, False])
+    has_intro_chorus = False
+    has_interlude = random.choice([True, False, False])
 
     if num_verses == 3:
         has_solo = False
@@ -72,6 +106,17 @@ def build_song_structure() -> List[Dict[str, Any]]:
         has_outro = False
         SECTION_DEFS['verse'] = 4
         SECTION_DEFS['pre-chorus'] = 2
+
+    if part1_verses == 1 and part2_verses == 1:
+        has_bridge = random.choice([True, True, False])
+        has_interlude = random.choice([True, True, False])
+        if has_bridge == False and has_interlude == False:
+            has_bridge = True
+
+    if num_verses == 2:
+        has_intro_chorus = random.choice([True,False])
+        if has_intro_chorus:
+            has_intro = random.choice([True, False, False, False, False])
 
     # --- 3. Build the Song Structure Chronologically ---
 
@@ -84,6 +129,13 @@ def build_song_structure() -> List[Dict[str, Any]]:
                 'lines': intro_lines,
                 'line_length': section_line_lengths['intro']
             })
+
+    # Intro chorus
+    if has_intro_chorus:
+        song_structure.append({
+            'section': 'chorus', 'lines': chorus_lines,
+            'line_length': section_line_lengths['chorus']
+        })
 
     # Add Verse/Chorus Block 1
     song_structure.append({
@@ -101,7 +153,7 @@ def build_song_structure() -> List[Dict[str, Any]]:
     })
 
     # Add Verse/Chorus Block 2 (if applicable)
-    if num_verses >= 2:
+    if part1_verses >= 2:
         song_structure.append({
             'section': 'verse', 'lines': verse_lines,
             'line_length': section_line_lengths['verse']
@@ -118,7 +170,6 @@ def build_song_structure() -> List[Dict[str, Any]]:
 
     # Add Bridge and Solo (middle section)
     if has_bridge:
-        bridge_lines = random.choice(SECTION_DEFS['bridge'])
         song_structure.append({
             'section': 'bridge', 'lines': bridge_lines,
             'line_length': section_line_lengths['bridge']
@@ -129,17 +180,23 @@ def build_song_structure() -> List[Dict[str, Any]]:
             'line_length': section_line_lengths['solo']
         })
 
+    if has_interlude:
+        song_structure.append({
+            'section': random.choice(["interlude", "break", "movement", "riff", "hook", "drop"]), 'lines': 0,
+            'line_length': section_line_lengths['interlude']
+        })        
+
     # Add Verse/Chorus Block 3 (if applicable)
-    if num_verses == 3:
+    if part2_verses == 1:
         song_structure.append({
             'section': 'verse', 'lines': verse_lines,
             'line_length': section_line_lengths['verse']
         })
-#        if has_pre_chorus:
-#            song_structure.append({
-#                'section': 'pre-chorus', 'lines': pre_chorus_lines,
-#                'line_length': section_line_lengths['pre-chorus']
-#            })
+        if part1_verses == 1 and has_pre_chorus:
+            song_structure.append({
+                'section': 'pre-chorus', 'lines': pre_chorus_lines,
+                'line_length': section_line_lengths['pre-chorus']
+            })
         song_structure.append({
             'section': 'chorus', 'lines': chorus_lines,
             'line_length': section_line_lengths['chorus']
@@ -168,18 +225,56 @@ def initialize_llm():
     
     return llm_instance
 
-def step_create_mixtape(project, llm):
-    if "mixtape" in project.state:
+def truncate_by_word(input_string, max_length):
+  """
+  Removes words from the end of a string until its length is
+  less than or equal to max_length.
+  """
+  if len(input_string) <= max_length:
+    return input_string
+
+  # Split the string into a list of words
+  words = input_string.split()
+
+  # Keep removing the last word as long as the string is too long
+  while len(' '.join(words)) > max_length:
+    words.pop() # .pop() removes the last item from a list
+
+  # Join the remaining words back into a string
+  return ' '.join(words)
+
+def step_create_mixtape(force_regeneration, project, llm):
+    if (not force_regeneration) and ("mixtape" in project.state):
         return True
 
     mixtape_type = ArgManager.get_arg("theme")
     if mixtape_type == None:
         mixtape_type = random.choice(prompts.mixtape_types)
 
-    mixtape = llm.jquery(prompts.mixtape_prompt.format(theme = mixtape_type), max_tokens = 8192, temperature = 1.0, model = config.DEFAULT_MODEL)
+    band_and_song_naming_guidelines = ""
+
+    for i in range(1,11):
+        band_and_song_naming_guidelines += f"Band #{i} name guideline: {random.choice(prompts.band_name_guides)}\n"
+        band_and_song_naming_guidelines += f"Song #{i} name guideline: {random.choice(random.choice([prompts.song_name_guides_simple, prompts.song_name_guides]))}\n"
+
+    q = prompts.mixtape_prompt.format(
+            theme = mixtape_type,
+            band_and_song_naming_guidelines = band_and_song_naming_guidelines)
+
+    mixtape = llm.jquery(
+        q,
+        max_tokens = 8192, temperature = 1.0, model = config.DEFAULT_MODEL)
 
     print(mixtape_type)
     jprint(mixtape)
+
+    mixtape["band_and_song_naming_guidelines"] = band_and_song_naming_guidelines
+
+    # make sure genres are max 180 characters
+    for song in mixtape["songs"]:
+        if len(song["music_genre"]) > 180:
+            print(f"""Truncating music genre for {song["song_name"]}""")
+            song["music_genre"] = truncate_by_word(song["music_genre"], 180)
 
     project.state["mixtape_type"] = mixtape_type
     project.state["mixtape"] = mixtape
@@ -187,23 +282,57 @@ def step_create_mixtape(project, llm):
 
     return True
 
-def step_create_song_structures(project):
+def step_create_song_structures(force_regeneration, project):
     for song in project.state["mixtape"]["songs"]:
-        if not "structure" in song:
+        if force_regeneration or (not "structure" in song):
             print(f"""Creating song structure for {song["song_name"]}""")
             structure = build_song_structure()
 #            jprint(structure)
             song["structure"] = structure
             project.save()
 
-def step_create_lyrics(project, llm):
+def truncate_by_line(input_string, max_length):
+  """
+  Removes lines from the end of a string until its total length
+  is less than or equal to max_length.
+  """
+  if len(input_string) <= max_length:
+    return input_string
+
+  # Split the string into a list of lines
+  lines = input_string.splitlines()
+
+  # Keep removing the last line as long as the joined string is too long
+  # We use '\n'.join() to correctly calculate the length with newlines
+  while len('\n'.join(lines)) > max_length:
+    lines.pop() # Removes the last item (line) from the list
+
+  # Join the remaining lines back into a single string with newlines
+  return '\n'.join(lines)
+
+def step_create_lyrics(force_regeneration, project, llm):
     for song in project.state["mixtape"]["songs"]:
-        if not "lyrics" in song:
+        if force_regeneration or (not "lyrics" in song):
             print(f"""Creating lyrics for {song["song_name"]}""")
             structure = ""
+            lyrics_sections_guidance = {}
             for section in song["structure"]:
-                structure += f"""[{section["section"]}]\n"""
+                section_type = section["section"]
+                structure += f"""[{section_type}]\n"""
                 structure += f"""- {section["lines"]} lines of {section["line_length"]} length.\n"""
+
+                if section_type not in lyrics_sections_guidance:
+#                    print("section_type: " + section_type)
+                    if section_type in prompts.lyrics_guides:
+#                        print("found in guidance")
+                        lyrics_sections_guidance[section_type] = random.choice(prompts.lyrics_guides[section_type]).format(
+                            num_lines = section["lines"])
+
+            lyrics_guidance = ""
+            for section_type, guidance in lyrics_sections_guidance.items():
+                lyrics_guidance += f"{section_type}: {guidance}\n"
+
+            song["lyrics_guidance"] = lyrics_guidance
 
             messages = []
 
@@ -211,8 +340,9 @@ def step_create_lyrics(project, llm):
                 theme = project.state["mixtape_type"],
                 song_name = song["song_name"],
                 music_genre = song["music_genre"],
-                vocals_style = song["vocals_style"],
+                vocals_style = song["vocals_style"] + (" ensemble" if song.get("is_ensemble", False) else ""),
                 lyrics_description = song["lyrics_description"],
+                lyrics_guidance = song["lyrics_guidance"],
                 structure = structure
                 )})
 
@@ -224,8 +354,9 @@ def step_create_lyrics(project, llm):
                 theme = project.state["mixtape_type"],
                 song_name = song["song_name"],
                 music_genre = song["music_genre"],
-                vocals_style = song["vocals_style"],
+                vocals_style = song["vocals_style"] + (" ensemble" if song.get("is_ensemble", False) else ""),
                 lyrics_description = song["lyrics_description"],
+                lyrics_guidance = song["lyrics_guidance"],
                 structure = structure
                 )})
 
@@ -244,6 +375,11 @@ def step_create_lyrics(project, llm):
 #                structure = structure
 #                ))
 #            print(lyrics)
+
+            if len(lyrics) > 3000:
+                print(f"""Truncating lyrics for {song["song_name"]}""")
+                song["non_truncated_lyrics"] = lyrics
+                lyrics = truncate_by_line(lyrics)
 
             song["lyrics"] = lyrics
             project.save()
@@ -345,9 +481,9 @@ def download_suno_clip(clip_data, folder, title_prefix):
         print(f"Error downloading clip {clip_id}: {e}")
         return None
 
-def step_create_audio_simple_poll(project, max_in_flight=2, poll_interval=30):
+def step_create_audio_simple_poll(force_regeneration, project, max_in_flight=10, poll_interval=30):
     songs_to_create = deque([
-        s for s in project.state["mixtape"]["songs"] if not s.get("song_ids")
+        s for s in project.state["mixtape"]["songs"] if (force_regeneration or (not s.get("song_ids")))
     ])
     # Tracks jobs submitted to the API but not yet complete.
     # Format: { 'task_id': {'title': 'Song Title', 'song_ref': song} }
@@ -367,7 +503,8 @@ def step_create_audio_simple_poll(project, max_in_flight=2, poll_interval=30):
         while len(in_flight_jobs) < max_in_flight and songs_to_create:
             song = songs_to_create.popleft()
             title = song["song_name"]
-            style = f"{song['music_genre']}, {song['vocals_style']} vocals"
+            ensemble = " ensemble" if song.get("is_ensemble", False) else ""
+            style = f"{song['music_genre']}, {song['vocals_style']}{ensemble} vocals"
             lyrics = song["lyrics"]
 
             task_id = submit_suno_job(title, style, lyrics)
@@ -438,7 +575,7 @@ def rune_make_suno_request(title, style, lyrics=""):
   headers = {
     'Accept': '*/*',
     'Accept-Language': 'en-US,en;q=0.9,da;q=0.8',
-    'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18yT1o2eU1EZzhscWRKRWloMXJvemY4T3ptZG4iLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJzdW5vLWFwaSIsImF6cCI6Imh0dHBzOi8vc3Vuby5jb20iLCJleHAiOjE3NTQwNTcxOTksImZ2YSI6Wzk5OTk5LC0xXSwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9jbGVya19pZCI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIiwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9lbWFpbCI6InJ2ZW5kbGVyQGdtYWlsLmNvbSIsImh0dHBzOi8vc3Vuby5haS9jbGFpbXMvcGhvbmUiOm51bGwsImlhdCI6MTc1NDA1MzU5OSwiaXNzIjoiaHR0cHM6Ly9jbGVyay5zdW5vLmNvbSIsImp0aSI6IjllYmMyYzAwMDAxNzYxYzJlNzI5IiwibmJmIjoxNzU0MDUzNTg5LCJzaWQiOiJzZXNzXzJ1WE5tc0ZNOHZ1dXUzM0NrRm9uSVpGVm5sTiIsInN1YiI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIn0.tN2iklS5rR_YC3GHUTHuuAuNoS45eFUt-wIg9I2M0zqFMSoF9elw-lRLkqIkptzSQMbAq1lKzqjYXU3qLzgdnEAyg7GtgYKAagmnxAC3wNG3kTdQpTycN3cmA2jkMsbv0aV1HGF-JYAbJhCqDMYoxPcAmQLb0ivTCvKb_kPRM0gkt6KWfxP83KqFZMeOfb7KKbETSvaHF6jZFlOnQL1x2duhgHcdyPt3Xf-_fMMCd6nsEAvUI9qJ9s6ElHW0x7gd2oxABwR5QhWINJDCd64TU0imJbJSSXTDqY51Y45wz_fNoF_tIGuKMgxLqcyCtnHQxD59Nuii1l7SOpepvhUs7A',
+    'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18yT1o2eU1EZzhscWRKRWloMXJvemY4T3ptZG4iLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJzdW5vLWFwaSIsImF6cCI6Imh0dHBzOi8vc3Vuby5jb20iLCJleHAiOjE3NTQwNjg5NDksImZ2YSI6Wzk5OTk5LC0xXSwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9jbGVya19pZCI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIiwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9lbWFpbCI6InJ2ZW5kbGVyQGdtYWlsLmNvbSIsImh0dHBzOi8vc3Vuby5haS9jbGFpbXMvcGhvbmUiOm51bGwsImlhdCI6MTc1NDA2NTM0OSwiaXNzIjoiaHR0cHM6Ly9jbGVyay5zdW5vLmNvbSIsImp0aSI6IjhiOGQyZDVkMTA4YzE2ZGJmM2U2IiwibmJmIjoxNzU0MDY1MzM5LCJzaWQiOiJzZXNzXzJ1WE5tc0ZNOHZ1dXUzM0NrRm9uSVpGVm5sTiIsInN1YiI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIn0.B7btZhnPr6K4fJ326y5k50qvhm9BOBqjyn0XO7CR4mNPKjLEL7gr2l7ws-gkMV3uTRO5LsGBoyJZeJMOtgo2TmSSYXPmS8od7oXkJkCOINjA_UqhM6kvdYDgjZ8lVf2CPUrEEmXF2tcuuVoG4uNBYeruz4Q-umFEJeBWDXbitYQmAJLHcNPvCT9Ifdi1jkfT159l9RNAvshiVKyKkAXgyml8to0v7Utz536KJ4mPNCT2p5PYeHHbFVTGgzm5jQj-IrcKUmGw4iIWd9RR-7cJk5Zcnauu014Yg-cvfxv1Uviw6zkPvQ1xRRGtOsFKa_rXPfnExHvXPgbDOsYObeNQ8Q',
     'Content-Type': 'text/plain;charset=UTF-8',
     'Origin': 'https://suno.com',
     'Referer': 'https://suno.com/',
@@ -447,7 +584,7 @@ def rune_make_suno_request(title, style, lyrics=""):
 
   # The full payload from your request, including the long token
   payload = {
-    "token": "P1_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.haJwZACjZXhwzmiMvFincGFzc2tlecUEnmFrD45zI0pzl88vPO3h-JjyofxXwWCcaropVESp0HNwpgRNmLhkLL6rG-EMhPHRRmia01Xz18fB6KUcWPocfQvguuPfhZIDIosRIa5dl7bJ1nNf13Gc1RRZPTLD5XnGYMcFVSso0Q5uwS0VFTlrHIN69IS8_ROZFOjp1AokhUbaLKVY4LVEWve1bOD6PfrRJo7bKqAu3Fj-k1yenaaKiIS3k15oXeciECD797cFfJfvZiA9tineG6mJB1svEpke-tRb35ldu3EDHxJxKosyclp9ebjghZSZUdVsuVRwxwbFLCwNNLxNmn6IuhqE0POlWA4Nb0zQTy8eHVjV6vfNpQpkzMiWTIh-WSgJfOpkSiGvkRGVZd3tHfTMqNBHs5BWnn4UPx_j86gQtdbiLWKmRiLI_ATWNkjje_fYxLlnG0zA8n8WCynogATW-WqbTxOLy5BHatVvfh7W7y5lRSdOW6TzkhjkPe7DwXO9pUueDMUJnTQnqB8_6mSFGw9Mf-_lk0eRHV62iXOOMiQcWk8enG8UtoVgUJfu_J1h5Cd8dEIl2iJT22MDSzzg7VgkoZMJLXG5R9u4iZ8XhxeZvrYf3q0ShVSu_rZZLgcLpigHpmRz4PYn-DDvKZQMGxrAF8Q9-VZctUMXR6w3IUX_Apw__ZmILXH6quX5SODthCzcBQe8JHORxnnSugIvnZHP_5aTmtQKirHO7J15UHBxnx6d6LrgMZCzTsEeg8PI0plZ2K5q_PujCq1REMcACvJif6u2R3oeTUVAk-Py5_nsvaiODbCOYUuLYETyZzXFasjTT_nSeRhS-UIq6AttIV7c-6LVXPxjzSEfP_5w5cQp7MQXTJtIbPoUAyk7dn3qM9upJXZ3nCG48LOIujy5BjlhsgyXYRkgQ4ZbW0Q5zcb9XMcfPnWdlXO453vYSJaIamxAWAfpDbaF0VInCOWA9X9u7QnbMPdcb6cZWGw9XI53z7_-STUwhg9x3-KGhS7sp9z-NCkmoP2gCv3YTnWOvottRmvfa7_bKtwPXjzukoroOVdHBMaGTc6UX8hhci5WQ3MoyVdnwejjfmBll93Oc9ad12KYMTphtAO7sfbpU3IS4cJEP1F9xdE_6PuQBP9Wfut48XFlPKFR6uD6sYPAba8WXH832zjn9RV8ISJSwLEw-1B3flcsK06LJrU38nDoGecuva_zRkpOgaWn8f1aM9U1YRLzc_s90EocZxb5eBIzPk95H5cn6XWBOiKGz6ln9WXc-Y19ZIkZlLDSaiWg3f5dRSov3khSvyRy3eigjjiU7jsjIvPOmQpTKaJILXCGhSNbaZtz17Du4hOqDb672cC9JlICicLg3Chb5HUZA8sQ1-B_khOXDRzowrCRoOr8haY1r10GfRknsSAk1VLd-NCSe8-CV_CfEeplypYj25zWAsE3QjIX4UOzsZps6ltRPm0-PnqqYA3UYqukZ1uaLGOzA_YAMJ8rLloxbOVwAUp8JjlLqlrMM-byk9MZ5nqbn8tHp7SxHtU6d1TxMq2vPKPtC4D1YLg_R5mz8fIa5XqKr3X3wVEqwFqeOiSTkAZuA6nBwKJrcqcyODAxY2JkqHNoYXJkX2lkzhQ8hB8.3unIwCU7bcDSjkJ_QJuimGwFxGOmyVV7e0VS8g4Uhio",
+    "token": "P1_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.haJwZACjZXhwzmiM6j6ncGFzc2tlecUErThSwgitgIVVzCR6KAA9xQ-btL5jESYw80GJ3aDN3ByzWdwoAriB-x218Pu4GQ1SCCBQ05jv5i29tqv1QgCWtIvWBLx6moP0yk4c6KpRQR-2kHAF_sofdMvUhS9W1VdYTiWojic6u_zSK8FtvxW7z33bevS0DH0EzF7CxKY4e6872n8QyOnH0xjmsyksWs0qlYzNHEArcsae10KeLQeQfr5wlTnSZ_ncWGxZu6Qde7l_sCrbwlNaG7ISDY5p6BCKflzDxsDnWiiriLNKxrXAamWPlEQ5EknkoLVRwtMj68I-aKxgEKq5uOgRF5mnw6ApL9ug7yqCydLd-PE8llcUVAi6Up6TntLmW568i-a1RKswfa3anALKFQNggpNQTq_0A0b6ybA2vpJ-mRKEYGWnY8AlszmixxTdVTDrnU8M1Ck3VcW_gG1qEYfFP76QWsb-DXmBLLs_Y6fBQijg6KGKvYxIJ43-GEw8nyaSXeUFkrU1mzg_PINSlTZs5-AxQRilv08bGSvmcm60xD7pfzTJM8q9HIPrk9DkgtrWPhERrq8SkGR63moV8LWdG5stfY4oeWwRU3ceckCT82gksS10P4fhNf3RdCqFrVGuPUBQPkA1ez-a2zhc4TJEXUz-j1dJtrvyNAjAMWUvGZrlq0bSv9yA2E3Y81ec93cssFenTLQmQ4pgQQcS_3JsZUpROTzwW0KLBxRfZl5-F7WQWRTcsNEdquVD24spNgUoFfFAjthh3hbZxTdZo82xyiAP6ka_AbdAnQAUq8-tvjYuzaMsscinBPCp6fsXeGBfq9nW8sD6rqbQVUcCUwl6Fr8NDTInWrmuccx7vOKnRbhpkm23g47mwz3909dtVbLuqgytHqQt9oTPM_TYy-OsnXmpyUfswcj1e9TWtCNHxr8Pz8p31PFJ18zC92d-B9UjcM7Nl5JhF5p-V_r0ESYcVsL7Q3JnfTLvQ0dE3h3DyWXthY2fK1EuDPTCjRQuzd3u7TPpul12-XrRe4ENKLyVxc1U5RTKkcAqCI5tK6M4iDUK6-4Fv1M9mtLdjYpeJxo5Rz_lwRNKlrHWt5d_Pduh4lK3IGyvdLe_OVLCNFqzXzfVlXsr1GTFp6foxZ9GT0Jm6Ee9E12vzksrYUO2EHe_d3ab5W6V2-d2PqIJ_oNASdrxxpaagDvBKb20-Ep3r1g7AYRVNI4XYxhnknRsPdfh9P3pB390l-Kn7jnyyqK3NMuGJxUDmEJtkDrpR4RkfqC3YqGEKb5A5zAGYQx8Xfzw28dhku3Rq0E-M4729Ekz9ijnYCdp5gQ3voKsmY45WuP_yhx5S6FwdXJCAwypcY-5fZjHAQ0FQ_cd63OQmMisMrmdjQf7qDIX3UDG4pCv-bAqIhyVDX2rX3cX4pczmVAtP1z1sFQ2S-ezrTFvzRS_wkdmDG11wJLelEckz9tBeMilo-MipSz03Iq14I5iQOe2XKCwIVMxdLV8KKJtBurYN7F35j1edE2BY665cfBZz5G-OrRpgy1cz0GzVicyyqKaWyFaEX05x8yBl4wFmEi2Ij7H1_9GZRGAgertGUCKSseaT_Ecgh_K6or8mTe5x8EvE2com6Jrcqc1Nzk3Y2RmqHNoYXJkX2lkzhQ8hB8.rSqTeaKfOoRAJ76oNE_zoDQ36mkthYwB-SyFXewzd1E",
     "prompt": lyrics,
     "generation_type": "TEXT",
     "tags": style,
@@ -535,10 +672,10 @@ def rune_download_clips(clips_data, folder):
       except requests.exceptions.RequestException as e:
         print(f"An error occurred during download attempt: {e}. Will retry.")
 
-def rune_step_create_audio(project):
+def rune_step_create_audio(force_regeneration, project):
   for song in project.state["mixtape"]["songs"]:
-    if not "song_ids" in song:
-      clips_data = rune_make_suno_request(song["song_name"], song["music_genre"] + ", " + song["vocals_style"] + " vocals", song["lyrics"])
+    if force_regeneration or (not "song_ids" in song):
+      clips_data = rune_make_suno_request(song["song_name"], song["music_genre"] + ", " + song["vocals_style"] + (" ensemble" if song.get("is_ensemble", False) else "") + " vocals", song["lyrics"])
 
       if clips_data and 'clips' in clips_data:
         clips = clips_data.get('clips', [])
@@ -568,9 +705,9 @@ def rune_attempt_download_clip(clip_id, title, folder):
   except requests.exceptions.RequestException:
     return False
 
-def rune_step_create_audio_simple_poll(project, max_in_flight=5, poll_interval=60):
+def rune_step_create_audio_simple_poll(force_regeneration, project, max_in_flight=5, poll_interval=60):
   songs_to_create = deque([
-    s for s in project.state["mixtape"]["songs"] if not s.get("song_ids")
+    s for s in project.state["mixtape"]["songs"] if (force_regeneration or (not s.get("song_ids")))
   ])
   # Tracks songs submitted to the API but not yet fully downloaded.
   # Format: { 'song_name': {'clip_ids': {'id1', 'id2'}, 'song_ref': song} }
@@ -590,7 +727,8 @@ def rune_step_create_audio_simple_poll(project, max_in_flight=5, poll_interval=6
       title = song["song_name"]
      
       print(f"\n Submitting request for: '{title}'")
-      response_data = rune_make_suno_request(title, f"{song['music_genre']}, {song['vocals_style']} vocals", song["lyrics"])
+      ensemble = " ensemble" if song.get("is_ensemble", False) else ""
+      response_data = rune_make_suno_request(title, f"{song['music_genre']}, {song['vocals_style']}{ensemble} vocals", song["lyrics"])
 
       if response_data and response_data.get('clips'):
         print(f" Request for '{title}' is in flight.")
@@ -642,22 +780,21 @@ def rune_step_create_audio_simple_poll(project, max_in_flight=5, poll_interval=6
      
   print(f"\nAll songs for project '{project.name}' have been processed.")
 
-def step_apply_tape_vst(project):
+def step_apply_tape_vst(force_regeneration, project):
     for song in project.state["mixtape"]["songs"]:
-        if not "vst_processed" in song:
-            print(f"""Applying tape effects for {song["song_name"]}""")
+        if force_regeneration or (not "vst_processed" in song):
+            vst_preset = random.choice(data.daw_presets)
+            print(f"""Applying tape effects ({vst_preset}) for {song["song_name"]}""")
             song_id = song["song_ids"][0]
-#            for song_id in song["song_ids"]:
-            vst_preset = random.choice(data.song_presets_light)
             mt_song = MT.from_file(f"saves/{project.name}/{song_id}.mp3")
-#            mt_song.apply_vst("Cassette", vst_preset)
-            mt_song.apply_vst("DAWCassette", "presets/daw_default.fxp")
+            mt_song.apply_vst("DAWCassette", vst_preset)
             mt_song.save(f"saves/{project.name}/{song_id}-tape.mp3", "mp3")
             song["vst_processed"] = True
+            song["vst_preset"] = vst_preset
             project.save()
 
-def step_create_cover_image(project, replicate_client):
-    if not "cover_created" in project.state["mixtape"]:
+def step_create_cover_image(force_regeneration, project, replicate_client):
+    if force_regeneration or (not "cover_created" in project.state["mixtape"]):
         print(f"""Creating cover image""")
         replicate_client.generate_image(
             output_path=f"saves/{project.name}/cover.png",
@@ -669,8 +806,8 @@ def step_create_cover_image(project, replicate_client):
         project.state["mixtape"]["cover_created"] = True
         project.save()
 
-def step_process_cover_image(project):
-    if not "cover_processed" in project.state["mixtape"]:
+def step_process_cover_image(force_regeneration, project):
+    if force_regeneration or (not "cover_processed" in project.state["mixtape"]):
         print(f"""Processing cover image""")
         cover_input_filename = f"saves/{project.name}/cover.png"
         cover_output_filename = f"saves/{project.name}/cover-processed.png"
@@ -738,19 +875,38 @@ def step_process_cover_image(project):
         project.save()
 
 def clean_lyrics(lyrics_text):
-    lines = lyrics_text.split('\n')
+    """
+    Cleans a string of lyrics by trimming whitespace, removing metadata lines,
+    and collapsing multiple empty lines into a single empty line.
+    """
+    # 1) Trim whitespace from the start and end of the entire string
+    trimmed_text = lyrics_text.strip()
+    lines = trimmed_text.split('\n')
     cleaned_lines = []
-    
+
     for line in lines:
+        # Also trim each individual line
         stripped_line = line.strip()
-        # Skip lines that start with [ or (
-        if not stripped_line.startswith('[') and not stripped_line.startswith('('):
-            cleaned_lines.append(line)
-    
+
+        # Skip lines that start with [ or ( (e.g., [Chorus])
+        if stripped_line.startswith('['): # or stripped_line.startswith('('):
+            continue
+
+        # 2) Reduce contiguous empty lines to a single empty line
+        if not stripped_line:
+            # Only add an empty line if the last line wasn't also empty
+            if cleaned_lines and cleaned_lines[-1] == "":
+                continue
+            else:
+                cleaned_lines.append("")
+        else:
+            # It's a content line, so add the stripped version
+            cleaned_lines.append(stripped_line)
+
     return '\n'.join(cleaned_lines)
 
-def step_create_webpage(project):
-    if True or not "webpage_created" in project.state["mixtape"]:
+def step_create_webpage(force_regeneration, project):
+    if force_regeneration or (not "webpage_created" in project.state["mixtape"]):
         print(f"""Creating webpage""")
         playlist = ""
         song_1_name = None
@@ -768,26 +924,26 @@ def step_create_webpage(project):
                 song_1_url = song_url
             playlist += f"""<div class="track active" data-src="{song_url}">
                         <span class="track-number">{song_index}.</span>
-                        <span class="track-title">{song_name}</span>
+                        <span class="track-title">{html.escape(song_name)}</span>
                     </div>"""
             lyrics[song_name] = clean_lyrics(song_lyrics)
             song_index += 1
 
         page = data.page_template.format(
             cover_url = "cover-composited.png",
-            mixtape_name = project.state["mixtape"]["title"],
+            mixtape_name = html.escape(project.state["mixtape"]["title"]),
             playlist = playlist,
-            song_1_name = song_1_name,
+            song_1_name = html.escape(song_1_name),
             song_1_url = song_1_url,
-            quote = project.state["mixtape"]["backstory"],
+            quote = html.escape(project.state["mixtape"]["backstory"]),
             lyrics = json.dumps(lyrics)
             )
-        with open(f"saves/{project.name}/page.html", "w") as text_file:
+        with open(f"saves/{project.name}/page.html", "w", encoding="utf-8") as text_file:
             text_file.write(page)
         project.state["mixtape"]["webpage_created"] = True
         project.save()
 
-def main():
+def main(force_regeneration):
     """
     Loads a base image and applies several layers with different
     blending modes, then saves the result.
@@ -797,23 +953,68 @@ def main():
 
     project = SavesManager(ArgManager.get_arg("project"), False)
 
-    step_create_mixtape(project, llm)
-#    return;
-    step_create_song_structures(project)
-    step_create_lyrics(project, llm)
-#    return;
-#    step_create_audio_simple_poll(project)
-    rune_step_create_audio_simple_poll(project)
-    step_apply_tape_vst(project)
-    step_create_cover_image(project, replicate_client)
-    step_process_cover_image(project)
-    step_create_webpage(project)
+    step_1 = (ArgManager.get_arg("step1") == True)
+    step_2 = (ArgManager.get_arg("step2") == True)
+    step_3 = (ArgManager.get_arg("step3") == True)
+    step_4 = (ArgManager.get_arg("step4") == True)
+    step_5 = (ArgManager.get_arg("step5") == True)
+    step_6 = (ArgManager.get_arg("step6") == True)
+    step_7 = (ArgManager.get_arg("step7") == True)
+    step_8 = (ArgManager.get_arg("step8") == True)
+
+    step_all = (ArgManager.get_arg("stepall") == True)
+
+    if step_4:
+         # if new audio, we must run audio processing and webpage (new guids)
+        step_5 = True
+        step_8 = True
+
+    if step_6:
+         # if new image, we must run image processing
+        step_7 = True
+
+    # do it
+    if step_1 or step_all:
+        step_create_mixtape(force_regeneration, project, llm)
+
+    if step_2 or step_all:
+        step_create_song_structures(force_regeneration, project)
+
+    if step_3 or step_all:
+        step_create_lyrics(force_regeneration, project, llm)
+
+    if step_4 or step_all:
+        step_create_audio_simple_poll(force_regeneration, project)
+#        rune_step_create_audio_simple_poll(force_regeneration, project)
+
+    if step_5 or step_all:
+        step_apply_tape_vst(force_regeneration, project)
+
+    if step_6 or step_all:
+        step_create_cover_image(force_regeneration, project, replicate_client)
+
+    if step_7 or step_all:
+        step_process_cover_image(force_regeneration, project)
+
+    if step_8 or step_all:
+        step_create_webpage(force_regeneration, project)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Mixtapes")
     parser.add_argument("-p", "--project",type=str,help="Project name")
     parser.add_argument("-t", "--theme",type=str,help="Mixtape theme")
+    parser.add_argument("-f", "--force",   action="store_true",help="Force regeneration")
+    parser.add_argument("-s1", "--step1",  action="store_true", help="Perform step 1 (concept)")
+    parser.add_argument("-s2", "--step2",  action="store_true", help="Perform step 2 (song structures)")
+    parser.add_argument("-s3", "--step3",  action="store_true", help="Perform step 3 (lyrics)")
+    parser.add_argument("-s4", "--step4",  action="store_true", help="Perform step 4 (audio generation)")
+    parser.add_argument("-s5", "--step5",  action="store_true", help="Perform step 5 (audio processing)")
+    parser.add_argument("-s6", "--step6",  action="store_true", help="Perform step 6 (image generation)")
+    parser.add_argument("-s7", "--step7",  action="store_true", help="Perform step 7 (image processing)")
+    parser.add_argument("-s8", "--step8",  action="store_true", help="Perform step 8 (webpage generation)")
+    parser.add_argument("-sa", "--stepall",action="store_true", help="Perform all steps")
     args = parser.parse_args()
+    
     try:
         ArgManager.init(args)
     except (RuntimeError, TypeError) as e:
@@ -825,5 +1026,7 @@ if __name__ == "__main__":
     if ArgManager.get_arg("project") == None:
         print("project not specified")
         exit(1)
-        
-    main()
+    
+    force_regeneration = (ArgManager.get_arg("force") == True)
+
+    main(force_regeneration)

@@ -1,3 +1,21 @@
+daw_presets = [
+    "presets/daw_badhead_chrome.fxp",
+    "presets/daw_badhead_metal.fxp",
+    "presets/daw_badhead_normal.fxp",
+    "presets/daw_badtape_chrome.fxp",
+    "presets/daw_badtape_metal.fxp",
+    "presets/daw_badtape_normal.fxp",
+    "presets/daw_default_chrome.fxp",
+    "presets/daw_default_metal.fxp",
+    "presets/daw_default_normal.fxp",
+    "presets/daw_degraded_chrome.fxp",
+    "presets/daw_degraded_metal.fxp",
+    "presets/daw_degraded_normal.fxp",
+    "presets/daw_pristine_chrome.fxp",
+    "presets/daw_pristine_metal.fxp",
+    "presets/daw_pristine_normal.fxp"
+]
+
 song_presets_light = [
     "presets/cassette_clean_tape.fxp",
     "presets/cassette_insight_bayside.fxp",
@@ -448,11 +466,19 @@ page_template = """<!DOCTYPE html>
             }}
         }});
 
-        // Initialize lyrics for the first track
-        const firstTrack = document.querySelector('.track.active .track-title');
-        if (firstTrack) {{
-            updateLyrics(firstTrack.textContent);
-        }}
+        // Initialize: Remove all active classes first, then set only first track as active
+        document.addEventListener('DOMContentLoaded', function() {{
+            // Remove active class from ALL tracks first
+            tracks.forEach(t => t.classList.remove('active'));
+            
+            // Then add active class only to the first track
+            const firstTrack = document.querySelector('.track');
+            if (firstTrack) {{
+                firstTrack.classList.add('active');
+                const firstTrackTitle = firstTrack.querySelector('.track-title').textContent;
+                updateLyrics(firstTrackTitle);
+            }}
+        }});
     </script>
 </body>
 </html>"""
