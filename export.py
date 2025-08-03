@@ -1,6 +1,7 @@
 import os
 import shutil
 import glob
+from PIL import Image
 
 # --- Configuration ---
 # The name of the main directory to export files into.
@@ -11,6 +12,7 @@ SOURCE_DIR = "saves"
 # --- HTML Template ---
 # This is the template for the index.html file.
 # The placeholder {FOLDER_COUNT} will be replaced by the script.
+# The image source is now correctly pointing to the .jpg file.
 # Note: CSS/JS curly braces are escaped by doubling them (e.g., {{...}})
 # so that Python's f-string formatting ignores them.
 HTML_TEMPLATE = """
@@ -251,7 +253,7 @@ HTML_TEMPLATE = """
             // Create mixtapes in scrambled order
             mixtapeNumbers.forEach(num => {{
                 const paddedNumber = num.toString().padStart(2, '0');
-                const coverImage = `${{paddedNumber}}/cover-composited.png`;
+                const coverImage = `${{paddedNumber}}/cover-composited.jpg`;
                 const htmlPage = `${{paddedNumber}}/page.html`;
                 const title = `Mixtape ${{paddedNumber}}`;
                 
@@ -290,12 +292,13 @@ HTML_TEMPLATE = """
 def organize_files():
     """
     Finds numbered subdirectories in 'saves/', creates sequentially numbered folders
-    in an 'export' directory, copies specific files, and finally generates an index.html file.
+    in an 'export' directory, converts cover PNG to JPG, copies other files,
+    and finally generates an index.html file.
     """
     print("Starting the file organization process...")
+    print("NOTE: This script requires the Pillow library. Install it with 'pip install Pillow'")
 
     # --- 1. Create the main export directory ---
-    # The export path is relative to the script's location, not inside 'saves'.
     export_path = os.path.join(".", EXPORT_DIR_NAME)
     try:
         os.makedirs(export_path, exist_ok=True)
@@ -312,7 +315,6 @@ def organize_files():
         source_subdir_name = f"{i:02d}"
         source_subdir_path = os.path.join(SOURCE_DIR, source_subdir_name)
 
-        # Check if a source subdirectory with this name actually exists
         if os.path.isdir(source_subdir_path):
             print(f"\nProcessing source subdirectory: '{source_subdir_path}'")
 
@@ -338,28 +340,52 @@ def organize_files():
             else:
                 print(f"   -> Warning: No '*-tape.mp3' file found in '{source_subdir_path}'.")
 
-            # --- 5. Copy over other specified files ---
-            files_to_copy = ["cover-composited.png", "page.html"]
-            for filename in files_to_copy:
-                source_file_path = os.path.join(source_subdir_path, filename)
-                if os.path.exists(source_file_path):
-                    try:
-                        shutil.copy(source_file_path, target_subdir_path)
-                        print(f"   -> Copied '{filename}'")
-                    except (shutil.Error, IOError) as e:
-                        print(f"Error: Could not copy '{filename}'. Reason: {e}")
-                else:
-                    print(f"   -> Warning: File '{filename}' not found in '{source_subdir_path}'.")
+            # --- 5. Convert cover-composited.png to JPG ---
+            source_image_path = os.path.join(source_subdir_path, "cover-composited.png")
+            target_image_path = os.path.join(target_subdir_path, "cover-composited.jpg")
+            if os.path.exists(source_image_path):
+                try:
+                    with Image.open(source_image_path) as img:
+                        # Convert to RGB to remove alpha channel, which is necessary for JPG
+                        rgb_img = img.convert('RGB')
+                        rgb_img.save(target_image_path, 'jpeg', quality=90)
+                        print("   -> Converted 'cover-composited.png' to JPG.")
+                except Exception as e:
+                    print(f"Error: Could not convert image. Reason: {e}")
+            else:
+                print("   -> Warning: File 'cover-composited.png' not found.")
+
+            # --- 6. Read, modify, and write page.html ---
+            source_page_path = os.path.join(source_subdir_path, "page.html")
+            if os.path.exists(source_page_path):
+                try:
+                    # Read the original page.html content
+                    with open(source_page_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Replace the image reference
+                    modified_content = content.replace('cover-composited.png', 'cover-composited.jpg')
+                    
+                    # Write the modified content to the new location
+                    target_page_path = os.path.join(target_subdir_path, 'page.html')
+                    with open(target_page_path, 'w', encoding='utf-8') as f:
+                        f.write(modified_content)
+                    
+                    print("   -> Copied and modified 'page.html' to use JPG.")
+
+                except Exception as e:
+                    print(f"Error: Could not process 'page.html'. Reason: {e}")
+            else:
+                print(f"   -> Warning: File 'page.html' not found in '{source_subdir_path}'.")
 
             # --- Increment the counter for the next destination folder ---
             export_folder_counter += 1
 
-    # --- 6. Create the index.html file after all copying is done ---
+    # --- 7. Create the index.html file after all copying is done ---
     final_folder_count = export_folder_counter - 1
     if final_folder_count > 0:
         print(f"\nFile copying complete. Processed {final_folder_count} director{'y' if final_folder_count == 1 else 'ies'}.")
         
-        # Format the HTML template with the final folder count
         final_html_content = HTML_TEMPLATE.format(FOLDER_COUNT=final_folder_count)
         index_file_path = os.path.join(export_path, "index.html")
         

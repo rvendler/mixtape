@@ -257,9 +257,17 @@ def step_create_mixtape(force_regeneration, project, llm):
         band_and_song_naming_guidelines += f"Band #{i} name guideline: {random.choice(prompts.band_name_guides)}\n"
         band_and_song_naming_guidelines += f"Song #{i} name guideline: {random.choice(random.choice([prompts.song_name_guides_simple, prompts.song_name_guides]))}\n"
 
+    cover_image_guidelines = ""
+    cover_image_guidelines += f"Base: {random.choice(prompts.cover_image_guide)}\n"
+    cover_image_guidelines += f"Colors: {random.choice(prompts.cover_image_color_guide)}\n"
+    cover_image_guidelines += f"Details: {random.choice(prompts.cover_image_details)}\n"
+    cover_image_guidelines += f"Lettering: {random.choice(prompts.cover_image_lettering)}\n"
+    cover_image_guidelines += f"Damage: {random.choice(prompts.cover_image_damage)}\n"
+
     q = prompts.mixtape_prompt.format(
             theme = mixtape_type,
-            band_and_song_naming_guidelines = band_and_song_naming_guidelines)
+            band_and_song_naming_guidelines = band_and_song_naming_guidelines,
+            cover_image_guidelines = cover_image_guidelines)
 
     mixtape = llm.jquery(
         q,
@@ -800,7 +808,7 @@ def step_create_cover_image(force_regeneration, project, replicate_client):
         print(f"""Creating cover image""")
         replicate_client.generate_image(
             output_path=f"saves/{project.name}/cover.png",
-            prompt=project.state["mixtape"]["illustration"],
+            prompt=project.state["mixtape"]["illustration"] + ". Photorealistic old artifact feel, documentary feel, hand-made, imperfect.",
             aspect="2:3",
             prompt_upsampling=False,
             model="google/imagen-4",
@@ -980,23 +988,23 @@ def main(force_regeneration):
         step_create_mixtape(force_regeneration, project, llm)
 
     if step_2 or step_all:
-        step_create_song_structures(force_regeneration, project)
+        step_create_cover_image(force_regeneration, project, replicate_client)
 
     if step_3 or step_all:
-        step_create_lyrics(force_regeneration, project, llm)
+        step_process_cover_image(force_regeneration, project)
 
     if step_4 or step_all:
+        step_create_song_structures(force_regeneration, project)
+
+    if step_5 or step_all:
+        step_create_lyrics(force_regeneration, project, llm)
+
+    if step_6 or step_all:
         step_create_audio_simple_poll(force_regeneration, project)
 #        rune_step_create_audio_simple_poll(force_regeneration, project)
 
-    if step_5 or step_all:
-        step_apply_tape_vst(force_regeneration, project)
-
-    if step_6 or step_all:
-        step_create_cover_image(force_regeneration, project, replicate_client)
-
     if step_7 or step_all:
-        step_process_cover_image(force_regeneration, project)
+        step_apply_tape_vst(force_regeneration, project)
 
     if step_8 or step_all:
         step_create_webpage(force_regeneration, project)
@@ -1007,12 +1015,12 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--theme",type=str,help="Mixtape theme")
     parser.add_argument("-f", "--force",   action="store_true",help="Force regeneration")
     parser.add_argument("-s1", "--step1",  action="store_true", help="Perform step 1 (concept)")
-    parser.add_argument("-s2", "--step2",  action="store_true", help="Perform step 2 (song structures)")
-    parser.add_argument("-s3", "--step3",  action="store_true", help="Perform step 3 (lyrics)")
-    parser.add_argument("-s4", "--step4",  action="store_true", help="Perform step 4 (audio generation)")
-    parser.add_argument("-s5", "--step5",  action="store_true", help="Perform step 5 (audio processing)")
-    parser.add_argument("-s6", "--step6",  action="store_true", help="Perform step 6 (image generation)")
-    parser.add_argument("-s7", "--step7",  action="store_true", help="Perform step 7 (image processing)")
+    parser.add_argument("-s2", "--step2",  action="store_true", help="Perform step 2 (image generation)")
+    parser.add_argument("-s3", "--step3",  action="store_true", help="Perform step 3 (image processing)")
+    parser.add_argument("-s4", "--step4",  action="store_true", help="Perform step 4 (song structures)")
+    parser.add_argument("-s5", "--step5",  action="store_true", help="Perform step 5 (lyrics)")
+    parser.add_argument("-s6", "--step6",  action="store_true", help="Perform step 6 (audio generation)")
+    parser.add_argument("-s7", "--step7",  action="store_true", help="Perform step 7 (audio processing)")
     parser.add_argument("-s8", "--step8",  action="store_true", help="Perform step 8 (webpage generation)")
     parser.add_argument("-sa", "--stepall",action="store_true", help="Perform all steps")
     args = parser.parse_args()
