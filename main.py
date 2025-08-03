@@ -782,12 +782,14 @@ def rune_step_create_audio_simple_poll(force_regeneration, project, max_in_fligh
 
 def step_apply_tape_vst(force_regeneration, project):
     for song in project.state["mixtape"]["songs"]:
-        if force_regeneration or (not "vst_processed" in song):
-            vst_preset = random.choice(data.daw_presets)
+        if force_regeneration or (not "vst_processed" in song):            
+            vst_preset = song.get("vst_preset", random.choice(data.daw_presets))
             print(f"""Applying tape effects ({vst_preset}) for {song["song_name"]}""")
             song_id = song["song_ids"][0]
             mt_song = MT.from_file(f"saves/{project.name}/{song_id}.mp3")
             mt_song.apply_vst("DAWCassette", vst_preset)
+            print(f"""Mastering {song["song_name"]}""")
+            mt_song.apply_mastering()
             mt_song.save(f"saves/{project.name}/{song_id}-tape.mp3", "mp3")
             song["vst_processed"] = True
             song["vst_preset"] = vst_preset

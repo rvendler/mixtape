@@ -209,10 +209,40 @@ class MT:
 
 			# Construct the command to execute MrsWatson with the appropriate options
 			command = [
-				"MrsWatson64.exe", 
+				"tools/mrswatson/MrsWatson64.exe", 
 				"--input", input_file, 
 				"--output", output_file, 
 				"--plugin", f"{vst_name},{preset_name}"
+			]
+			
+			# Execute the command and wait for it to complete
+			subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+			#subprocess.run(command, check=True)
+
+			# Load the processed output WAV back into the audiosegment
+			processed_audio = AudioSegment.from_file(output_file, format="wav")
+
+			# Replace the current audiosegment with the processed version
+			self.audiosegment = processed_audio
+
+		finally:
+			# Clean up temporary files
+			if os.path.exists(input_file):
+				os.remove(input_file)
+			if os.path.exists(output_file):
+				os.remove(output_file)
+
+	def apply_mastering(self):
+		input_file = tempfile.mktemp(suffix=".wav")
+		output_file = tempfile.mktemp(suffix=".wav")
+		
+		try:
+			self.audiosegment.export(input_file, format="wav")
+
+			command = [
+				"tools/phase_limiter/phase_limiter.exe", 
+				"--input", input_file, 
+				"--output", output_file 
 			]
 			
 			# Execute the command and wait for it to complete
