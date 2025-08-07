@@ -21,10 +21,9 @@ from collections import deque
 import html
 
 # cut edges on inlay (overlay)
-# better covers
 # avoid dust motes etc.
 # better music genres
-# lyrics guidance per section - direct, question, repeat, etc.
+# remove things from lists so they don't get reused on a mixtape
 
 def build_song_structure() -> List[Dict[str, Any]]:
     """
@@ -387,8 +386,9 @@ def step_create_lyrics(force_regeneration, project, llm):
             if len(lyrics) > 3000:
                 print(f"""Truncating lyrics for {song["song_name"]}""")
                 song["non_truncated_lyrics"] = lyrics
-                lyrics = truncate_by_line(lyrics)
+                lyrics = truncate_by_line(lyrics, 3000)
 
+            song["lyrics_thinking"] = lyrics_prethink
             song["lyrics"] = lyrics
             project.save()
 
@@ -441,12 +441,16 @@ def poll_suno_job_status(task_id):
 
         message = "succeeded"
 
-        for song in data["data"]:
-            state = song.get("state", "pending")
-            if state != "succeeded":
-                message = state
+        if "data" in data:
+            for song in data["data"]:
+                state = song.get("state", "pending")
+                if state != "succeeded":
+                    message = state
 
-        if len(data["data"]) < 1:
+            if len(data["data"]) < 1:
+                message = "pending"
+        else:
+            print("warning, no data element in response")
             message = "pending"
 
         if message == 'succeeded':
@@ -583,7 +587,7 @@ def rune_make_suno_request(title, style, lyrics=""):
   headers = {
     'Accept': '*/*',
     'Accept-Language': 'en-US,en;q=0.9,da;q=0.8',
-    'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18yT1o2eU1EZzhscWRKRWloMXJvemY4T3ptZG4iLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJzdW5vLWFwaSIsImF6cCI6Imh0dHBzOi8vc3Vuby5jb20iLCJleHAiOjE3NTQwNjg5NDksImZ2YSI6Wzk5OTk5LC0xXSwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9jbGVya19pZCI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIiwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9lbWFpbCI6InJ2ZW5kbGVyQGdtYWlsLmNvbSIsImh0dHBzOi8vc3Vuby5haS9jbGFpbXMvcGhvbmUiOm51bGwsImlhdCI6MTc1NDA2NTM0OSwiaXNzIjoiaHR0cHM6Ly9jbGVyay5zdW5vLmNvbSIsImp0aSI6IjhiOGQyZDVkMTA4YzE2ZGJmM2U2IiwibmJmIjoxNzU0MDY1MzM5LCJzaWQiOiJzZXNzXzJ1WE5tc0ZNOHZ1dXUzM0NrRm9uSVpGVm5sTiIsInN1YiI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIn0.B7btZhnPr6K4fJ326y5k50qvhm9BOBqjyn0XO7CR4mNPKjLEL7gr2l7ws-gkMV3uTRO5LsGBoyJZeJMOtgo2TmSSYXPmS8od7oXkJkCOINjA_UqhM6kvdYDgjZ8lVf2CPUrEEmXF2tcuuVoG4uNBYeruz4Q-umFEJeBWDXbitYQmAJLHcNPvCT9Ifdi1jkfT159l9RNAvshiVKyKkAXgyml8to0v7Utz536KJ4mPNCT2p5PYeHHbFVTGgzm5jQj-IrcKUmGw4iIWd9RR-7cJk5Zcnauu014Yg-cvfxv1Uviw6zkPvQ1xRRGtOsFKa_rXPfnExHvXPgbDOsYObeNQ8Q',
+    'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18yT1o2eU1EZzhscWRKRWloMXJvemY4T3ptZG4iLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJzdW5vLWFwaSIsImF6cCI6Imh0dHBzOi8vc3Vuby5jb20iLCJleHAiOjE3NTQ2MDI4MTIsImZ2YSI6Wzk5OTk5LC0xXSwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9jbGVya19pZCI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIiwiaHR0cHM6Ly9zdW5vLmFpL2NsYWltcy9lbWFpbCI6InJ2ZW5kbGVyQGdtYWlsLmNvbSIsImh0dHBzOi8vc3Vuby5haS9jbGFpbXMvcGhvbmUiOm51bGwsImlhdCI6MTc1NDU5OTIxMiwiaXNzIjoiaHR0cHM6Ly9jbGVyay5zdW5vLmNvbSIsImp0aSI6ImE0Y2ZmNmU5MDJhMTZiOTlmYTg3IiwibmJmIjoxNzU0NTk5MjAyLCJzaWQiOiJzZXNzXzJ1WE5tc0ZNOHZ1dXUzM0NrRm9uSVpGVm5sTiIsInN1YiI6InVzZXJfMllkN0xLVm9wNWQ4V1JJYWJISVU3aHI1M2RSIn0.G7uHFrr50bFqMRuqpCkMP9vcAwqBxRnrWzfDXldq2d5i8V9ZoooQfQ9fbGnBHQsHphvufKPME1OHu7cc9uUgQr-KyK2IvIKNYlDm-DZKrJML-r6RjwVS0K2bNS3t6A48m52aTEDGnxnpQ_iKbwYvTpwIozbvqAQenBaHU3lbxhCNY-tonlwT9mhsiUdYGpNJxBZcAtvEn9gZdgWUF7iraVGS_bgLpFDcFKbmlMJPHZuDTUyVf__fypzBSGEirOwEGWSSrKK5HciCwMAt2TjhSYOfKBlAZRyYyPk6UtRBQAVv0ANYBvvp27aVVybM4ORS9Olug_P0naGOm1ogeAejhQ',
     'Content-Type': 'text/plain;charset=UTF-8',
     'Origin': 'https://suno.com',
     'Referer': 'https://suno.com/',
@@ -592,7 +596,7 @@ def rune_make_suno_request(title, style, lyrics=""):
 
   # The full payload from your request, including the long token
   payload = {
-    "token": "P1_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.haJwZACjZXhwzmiM6j6ncGFzc2tlecUErThSwgitgIVVzCR6KAA9xQ-btL5jESYw80GJ3aDN3ByzWdwoAriB-x218Pu4GQ1SCCBQ05jv5i29tqv1QgCWtIvWBLx6moP0yk4c6KpRQR-2kHAF_sofdMvUhS9W1VdYTiWojic6u_zSK8FtvxW7z33bevS0DH0EzF7CxKY4e6872n8QyOnH0xjmsyksWs0qlYzNHEArcsae10KeLQeQfr5wlTnSZ_ncWGxZu6Qde7l_sCrbwlNaG7ISDY5p6BCKflzDxsDnWiiriLNKxrXAamWPlEQ5EknkoLVRwtMj68I-aKxgEKq5uOgRF5mnw6ApL9ug7yqCydLd-PE8llcUVAi6Up6TntLmW568i-a1RKswfa3anALKFQNggpNQTq_0A0b6ybA2vpJ-mRKEYGWnY8AlszmixxTdVTDrnU8M1Ck3VcW_gG1qEYfFP76QWsb-DXmBLLs_Y6fBQijg6KGKvYxIJ43-GEw8nyaSXeUFkrU1mzg_PINSlTZs5-AxQRilv08bGSvmcm60xD7pfzTJM8q9HIPrk9DkgtrWPhERrq8SkGR63moV8LWdG5stfY4oeWwRU3ceckCT82gksS10P4fhNf3RdCqFrVGuPUBQPkA1ez-a2zhc4TJEXUz-j1dJtrvyNAjAMWUvGZrlq0bSv9yA2E3Y81ec93cssFenTLQmQ4pgQQcS_3JsZUpROTzwW0KLBxRfZl5-F7WQWRTcsNEdquVD24spNgUoFfFAjthh3hbZxTdZo82xyiAP6ka_AbdAnQAUq8-tvjYuzaMsscinBPCp6fsXeGBfq9nW8sD6rqbQVUcCUwl6Fr8NDTInWrmuccx7vOKnRbhpkm23g47mwz3909dtVbLuqgytHqQt9oTPM_TYy-OsnXmpyUfswcj1e9TWtCNHxr8Pz8p31PFJ18zC92d-B9UjcM7Nl5JhF5p-V_r0ESYcVsL7Q3JnfTLvQ0dE3h3DyWXthY2fK1EuDPTCjRQuzd3u7TPpul12-XrRe4ENKLyVxc1U5RTKkcAqCI5tK6M4iDUK6-4Fv1M9mtLdjYpeJxo5Rz_lwRNKlrHWt5d_Pduh4lK3IGyvdLe_OVLCNFqzXzfVlXsr1GTFp6foxZ9GT0Jm6Ee9E12vzksrYUO2EHe_d3ab5W6V2-d2PqIJ_oNASdrxxpaagDvBKb20-Ep3r1g7AYRVNI4XYxhnknRsPdfh9P3pB390l-Kn7jnyyqK3NMuGJxUDmEJtkDrpR4RkfqC3YqGEKb5A5zAGYQx8Xfzw28dhku3Rq0E-M4729Ekz9ijnYCdp5gQ3voKsmY45WuP_yhx5S6FwdXJCAwypcY-5fZjHAQ0FQ_cd63OQmMisMrmdjQf7qDIX3UDG4pCv-bAqIhyVDX2rX3cX4pczmVAtP1z1sFQ2S-ezrTFvzRS_wkdmDG11wJLelEckz9tBeMilo-MipSz03Iq14I5iQOe2XKCwIVMxdLV8KKJtBurYN7F35j1edE2BY665cfBZz5G-OrRpgy1cz0GzVicyyqKaWyFaEX05x8yBl4wFmEi2Ij7H1_9GZRGAgertGUCKSseaT_Ecgh_K6or8mTe5x8EvE2com6Jrcqc1Nzk3Y2RmqHNoYXJkX2lkzhQ8hB8.rSqTeaKfOoRAJ76oNE_zoDQ36mkthYwB-SyFXewzd1E",
+    "token": "P1_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.haJwZACjZXhwzmiVD6WncGFzc2tlecUErVoWuKaZVPiC2v0rhFVGE-_9av-fmMsQlicCdZqU4V8DtN1hNyYlIaKawGRJiSEpTC7KhCh259K0kjbw9GhdYM5txJJ9gMh1Ele7_vgnB8_NJi9DhrbwOWq3T30MEOn8spc-kVRHRiPn-bi5qZ5LjqhLj7EVm8wShIR4jlFhFaCCor_MKAO-aGBBZcxZSGXa_8DwIKdckL-J7aIK2Krsz7Bq3sQG2G8GU4cGezZZWtUxjv-Lb1msglzFBKd8yjOUKTT-Occj6rPetK-sdKlXVRpdAxaa6Z8w8vufvZC28gG_COMnh_Q0AAlr6Pvs57frw4B_IMlLcHMqURULb7D_nulj4wZsT3H_GoqUJfgIksk0EMbWvHZbEgaI7iFLqJly9kkcaG3MKuRDA9pDiEUHHjWp6vQjcDrX1LW9j7Z7HvCKuO11OUXDCeokeVoCAW2bBoIyW09EmpPqKD9hZiqWK9Ni0H5kzaxpxlk_rK7yTpZmcyCjabZyLKaFjMPo_M_I6lz0hAskMvgg9z4xP6keBwaKO7ZvZ6q4qxhKoq0Bwu1LYBZvyGn-bP8zpnerPUdwwGEG0zwSemEmBaCBcie0l8IpOGWjahhTWHusGlZAv_ltErwg7M9fMqPa5aknUCEcb9P63QxMFR21Bhrzjyw9Hb4xS7FxjZ39wgQceetH-TbhetL5jWdtdxfGpDM42PvLki_8fq1Sg3xY06mZ_qpSASwZIBs9l4Bclb68dw-GsqrsK4EIu8gaFQ23IDF22rgcZ8MQSz2s2cyp-ph0Hpx54N5lxSP5WmXFp5FQBHqHCf1mrbEhIoUJ_7-6axbV7L3ydh7mcp7lazolHXO2mpIddFPCxzQ_gTKxmT-WK8O7_FfOYxwReo_KmAkjUwwgYUk8IoywrLZjVL08PjdRHrS8p2ksz79anu0jO-7basEC9wvyFr4c3Qiv6ih1XqVF9quw6WbcCkQLhCUFnMpeYu4hQZFXBLcRyujVpAmuhAwEP8cgEQ1AbEEysqJovOmwUNEVjZdzd5Mc2j8yZHEVb2ToanTErrX974uL1ZgHBCt2S9ZnzIW0SzeBNbABuNBmUBvDihSWV5_dFStRZ3dyThIREqvMSlfKMY8Eix8G1q0ks3XJS1yEsOz7AQMsxoILiLGbXG11g3SxGrUxmdJvE-fs0aqPSC3kvWCUh9IHWw9V-x1hraY-lvJSKADbLQdy0ZzfoZCZPcZ8v48LUyoXVJtpC0s3JQpEecPgzdPBjX4peUtC6nIVWIHLEW-jn0_JCvQuNG3_TUwm5p37RpJzLtGy1xc1LSZkZwVzUh9o2SYI2hUwakxMNuJT6MNGnXGsD6Z_0gFgJUt0skmYHFPTkC0nxRoHluyD8S9pQMkqsJii9qyV3sa7R-3-J9P9lABuaAO-2mpuniYZrvtAarYi06RJIW-44YH-bPQtrVWi4_gZaN52hGYcp0tCwbwQnEP11HCXVUMXvlhXECkrwgxuddyLoS6k-CrenmCZJeCdRRnG-yfUIAwfjMbXDmp-2MTVrv3ExJsl8n79bdE6Kae9JdN0bjtPyZgpnF3ISCm-TFOxqYMeqgaR9c9_ZCSw4o6OAKJrcqgxOTQ3MjJlNKhzaGFyZF9pZM4UPIQf._K4somOY2eJsVX65V-ljro70JGk_HcKAjjBO4PJteqM",
     "prompt": lyrics,
     "generation_type": "TEXT",
     "tags": style,
@@ -713,7 +717,7 @@ def rune_attempt_download_clip(clip_id, title, folder):
   except requests.exceptions.RequestException:
     return False
 
-def rune_step_create_audio_simple_poll(force_regeneration, project, max_in_flight=5, poll_interval=60):
+def rune_step_create_audio_simple_poll(force_regeneration, project, max_in_flight=10, poll_interval=60):
   songs_to_create = deque([
     s for s in project.state["mixtape"]["songs"] if (force_regeneration or (not s.get("song_ids")))
   ])
@@ -746,6 +750,7 @@ def rune_step_create_audio_simple_poll(force_regeneration, project, max_in_fligh
           'all_clip_ids': {c['id'] for c in clips}, # Keep original set for saving
           'song_ref': song
         }
+        time.sleep(3)
       else:
         print(f"Failed to submit '{title}'. Placing at the end of the queue.")
         songs_to_create.append(song)
@@ -898,8 +903,8 @@ def clean_lyrics(lyrics_text):
         # Also trim each individual line
         stripped_line = line.strip()
 
-        # Skip lines that start with [ or ( (e.g., [Chorus])
-        if stripped_line.startswith('['): # or stripped_line.startswith('('):
+        # Skip lines that start with [ or **[ (e.g., [Chorus])
+        if stripped_line.startswith('[') or stripped_line.startswith('**['):
             continue
 
         # 2) Reduce contiguous empty lines to a single empty line
@@ -910,8 +915,8 @@ def clean_lyrics(lyrics_text):
             else:
                 cleaned_lines.append("")
         else:
-            # It's a content line, so add the stripped version
-            cleaned_lines.append(stripped_line)
+            # It's a content line, so add the stripped version, removing any internal * characters
+            cleaned_lines.append(stripped_line.replace("*", ""))
 
     return '\n'.join(cleaned_lines)
 
@@ -974,14 +979,14 @@ def main(force_regeneration):
 
     step_all = (ArgManager.get_arg("stepall") == True)
 
-    if step_4:
+    if step_6:
          # if new audio, we must run audio processing and webpage (new guids)
-        step_5 = True
+        step_7 = True
         step_8 = True
 
-    if step_6:
+    if step_2:
          # if new image, we must run image processing
-        step_7 = True
+        step_3 = True
 
     # do it
     if step_1 or step_all:
@@ -1000,8 +1005,8 @@ def main(force_regeneration):
         step_create_lyrics(force_regeneration, project, llm)
 
     if step_6 or step_all:
-        step_create_audio_simple_poll(force_regeneration, project)
-#        rune_step_create_audio_simple_poll(force_regeneration, project)
+#        step_create_audio_simple_poll(force_regeneration, project)
+        rune_step_create_audio_simple_poll(force_regeneration, project)
 
     if step_7 or step_all:
         step_apply_tape_vst(force_regeneration, project)

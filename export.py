@@ -219,7 +219,7 @@ HTML_TEMPLATE = """
         <div class="grid" id="mixtapeGrid">
             <!-- Single large text tile -->
             <div class="grid-item text-tile">
-                <div class="text-content">MIXTAPES.<br>Dreamt up by AI<br>Click a tape to listen.</div>
+                <div class="text-content">MIXTAPES<br>FROM THE '90s<br>Dreamt up by AI.<br>Click a tape to listen.</div>
             </div>
         </div>
     </div>

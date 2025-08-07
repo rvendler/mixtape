@@ -12,7 +12,7 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
 LLAMAAI_API_KEY = os.environ.get('LLAMAAI_API_KEY')
 
-DEFAULT_MODEL = "openrouter-google/gemini-2.5-flash"
+#DEFAULT_MODEL = "openrouter-google/gemini-2.5-flash"
 #DEFAULT_MODEL = "openrouter-anthropic/claude-sonnet-4"
 #DEFAULT_MODEL = "openrouter-openai/o3-2025-04-16"
 #DEFAULT_MODEL = "openrouter-meta-llama/llama-4-maverick"
@@ -21,8 +21,10 @@ DEFAULT_MODEL = "openrouter-google/gemini-2.5-flash"
 #DEFAULT_MODEL = "openrouter-deepseek/deepseek-chat-v3-0324"
 #DEFAULT_MODEL = "openrouter-moonshotai/kimi-k2"
 #DEFAULT_MODEL = "openrouter-cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
-#DEFAULT_MODEL = "openrouter-openrouter/horizon-alpha"
+#DEFAULT_MODEL = "openrouter-openrouter/horizon-beta"
 #DEFAULT_MODEL = "openrouter-thedrummer/anubis-pro-105b-v1"
+#DEFAULT_MODEL = "openrouter-openai/gpt-oss-120b"
+DEFAULT_MODEL = "openrouter-openai/gpt-5"
 
 S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME')
 S3_REGION = os.environ.get('S3_REGION')

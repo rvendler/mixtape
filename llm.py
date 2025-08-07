@@ -124,7 +124,7 @@ class LLM:
 
         if provider == "openai":
             return self._query_openai(messages, system_message, max_tokens, temperature, model_name, full_object)
-        if provider == "openrouter":
+        elif provider == "openrouter":
             return self._query_openrouter(messages, system_message, max_tokens, temperature, model_name, full_object)
         elif provider == "anthropic":
             return self._query_anthropic(messages, system_message, max_tokens, temperature, model_name, full_object)

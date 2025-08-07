@@ -159,7 +159,7 @@ The illustation prompt must specify that things are handmade, uneven, and so on,
 For each song, provide the following information:
 - Band name (e.g. "The Funky Monkeys")
 - Song name (e.g. "The Cage After Dark")
-- Lyrics description ("Silly lyrics about animals having fun at the zoo after closing hours.")
+- Lyrics description ("Silly lyrics about animals having fun at the zoo after closing hours."). Consider if the lyrics capture a moment or feeling, or they depict a change or movement, if they are like a collage of different moments, or what other structure the lyrics should have.
 - Music genre (e.g. "90s alternative rock, loud quiet loud style" - must always start with 90s, as that is the appropriate era, and you should use genres that existed at this time)
 - Vocals style (e.g. "female")
 - Is it an ensemble (e.g. a boy band or a girl group with multiple singers)
@@ -177,19 +177,20 @@ Guidelines for the illustration:
 Output in the following JSON format:
 
 {{
+    "concept_thinking": "<write extensively about your ideas for the mixtape. Remember, the theme doesn't mean that all the songs should be about that theme directly, but that someone putting together a mixtape would put those songs on the tape. It's often better if the themes aren't spelled out directly by the songs.>",
 	"backstory": "<mixtape backstory, always written in third person perspective>",
 	"title": "<mixtape title>",
 	"illustration": "<mixtape illustration prompt for image generation>",
-	"songs_thiking": "<write your thougts about songs for the mixtape, ideas for different band names and song names that go in different directions and formats>",
+	"songs_thinking": "<write extensively about your thougts about songs for the mixtape, ideas for different band names and song names that go in different directions and formats. Consider different lyrical themes, concrete song ideas. How to make this fresh?>",
 	"songs":
 	[
 		{{
 			"band_name": "<band name>",
 			"song_name": "<song name>",
-			"lyrics_description": "<lyrics description>",
-			"music_genre": "<90s music genre, do NOT mention any band names here, that will cause rejection, start with the general genre, and then more specifics after that>",
+			"lyrics_description": "<detailed description of the lyrics concept>",
+			"music_genre": "<90s music genre, do NOT mention any band names here, that will cause rejection, start with the general genre, and then more specifics after that. Use musical genre and subgenre terms, don't wax lyrical.>",
 			"vocals_style": "<male or female, no other options>",
-            "is_ensemble": <frue if a boy band/girl group with multiple singers, otherwise false>
+            "is_ensemble": <true if a boy band/girl group with multiple singers, otherwise false>
 		}},
 		...
 	]
@@ -465,7 +466,7 @@ song_name_guides = [
     "A specific time (e.g. '2:17 AM')",
     "A month and year (e.g. 'July 1999')",
     "A street address",
-    "A coordinate pair (e.g. '40°42′N 74°00′W')",
+#    "A coordinate pair (e.g. '40°42′N 74°00′W')",
     "A city + comma + state/country",
     "'Midnight in <Place>'",
     "'<Season> in <Place>'",
